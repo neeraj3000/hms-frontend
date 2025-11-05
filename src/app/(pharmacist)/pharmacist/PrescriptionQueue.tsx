@@ -11,6 +11,8 @@ import {
   Clock
 } from 'lucide-react';
 import PrescriptionDetailsModal from '@/components/PrescriptionDetailsModal';
+import getStatusColor from '@/components/getStatusColor';
+import getStatusIcon from '@/components/getStatusIcon';
 
 interface PrescriptionQueueProps {
   onSelectPrescription: (prescriptionId: string) => void;
@@ -114,27 +116,27 @@ const PrescriptionQueue: React.FC<PrescriptionQueueProps> = ({ onSelectPrescript
     setActiveTab('issue-medicine');
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Prescribed by Doctor':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Medication Issued by Pharmacist':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'Prescribed by Doctor':
+  //       return 'bg-blue-100 text-blue-800 border-blue-200';
+  //     case 'Medication Issued by Pharmacist':
+  //       return 'bg-green-100 text-green-800 border-green-200';
+  //     default:
+  //       return 'bg-gray-100 text-gray-800 border-gray-200';
+  //   }
+  // };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Prescribed by Doctor':
-        return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'Medication Issued by Pharmacist':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-600" />;
-    }
-  };
+  // const getStatusIcon = (status: string) => {
+  //   switch (status) {
+  //     case 'Prescribed by Doctor':
+  //       return <Clock className="w-4 h-4 text-blue-600" />;
+  //     case 'Medication Issued by Pharmacist':
+  //       return <CheckCircle className="w-4 h-4 text-green-600" />;
+  //     default:
+  //       return <Clock className="w-4 h-4 text-gray-600" />;
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -194,8 +196,15 @@ const PrescriptionQueue: React.FC<PrescriptionQueueProps> = ({ onSelectPrescript
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
                 >
                   <option value="all">All Status</option>
-                  <option value="prescribed">Prescribed by Doctor</option>
-                  <option value="issued">Medication Issued</option>
+                  <option value="initiated">Initiated by Nurse</option>
+                  <option value="prescribed">Medication Prescribed by Doctor</option>
+                  <option value="prescribed_lab">Medication Prescribed and Lab Test Requested</option>
+                  <option value="issued">Medication Issued by Pharmacist</option>
+                  <option value="issued_lab">Medication Issued and Lab Test Requested</option>
+                  <option value="lab_requested">Lab Test Requested</option>
+                  <option value="lab_completed">Lab Test Completed</option>
+                  <option value="issued_completed">Medication Issued and Lab Test Completed</option>
+                  <option value="prescribed_completed">Medication Prescribed and Lab Test Completed</option>
                 </select>
               </div>
             </div>
@@ -327,7 +336,7 @@ const PrescriptionQueue: React.FC<PrescriptionQueueProps> = ({ onSelectPrescript
                         </button>
 
                         {/* Conditional render for Issue Medicine or Issued badge */}
-                        {prescription.status === "Medication Issued by Pharmacist" ? (
+                        {prescription.medicines.some((med: { quantity_issued: number; }) => med.quantity_issued && med.quantity_issued > 0) ? (
                           <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-xl border border-green-200 shadow-sm w-full sm:w-auto">
                             <span>✅ Medicine Issued</span>
                           </div>

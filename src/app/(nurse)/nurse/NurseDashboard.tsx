@@ -7,7 +7,7 @@ import RecentPrescriptions from './RecentPrescriptions';
 import Profile from './Profile';
 
 const NurseDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('register');
 
   const renderContent = () => {
     switch (activeTab) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ResponsiveContainer from '@/components/ui/ResponsiveContainer';
 import { 
   Users, 
   Search, 
@@ -23,7 +24,7 @@ type Prescription = {
   student_age?: number;
   created_at?: string;
   status?: string;
-  notes?: string;
+  doctor_notes?: string;
   temperature?: string;
   bp?: string;
   weight?: string;
@@ -39,7 +40,7 @@ type Prescription = {
     bp?: string;
     pulse?: string;
   };
-  nurseNotes?: string;
+  nurse_notes?: string;
 };
 
 const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveTab }) => {
@@ -85,7 +86,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
           student_age: 21,
           created_at: '2024-01-15T10:30:00Z',
           status: 'Initiated by Nurse',
-          notes: 'Severe headache and fever',
+          doctor_notes: 'Severe headache and fever',
           temperature: '102.1°F',
           bp: '140/90',
           weight: '68kg'
@@ -97,7 +98,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
           student_age: 20,
           created_at: '2024-01-15T11:15:00Z',
           status: 'Lab Test Completed',
-          notes: 'Stomach pain and nausea',
+          doctor_notes: 'Stomach pain and nausea',
           temperature: '99.1°F',
           bp: '120/80',
           weight: '55kg'
@@ -113,7 +114,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
           priority: 'medium',
           chiefComplaint: 'Throat infection and difficulty swallowing',
           vitals: { temperature: '100.8°F', bp: '115/75', pulse: '82' },
-          nurseNotes: 'Throat appears inflamed, moderate fever'
+          nurse_notes: 'Throat appears inflamed, moderate fever'
         }
       ];
       setPrescriptions(samplePrescriptions);
@@ -168,7 +169,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ResponsiveContainer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
           <div className="space-y-4">
@@ -180,12 +181,12 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
             ))}
           </div>
         </div>
-      </div>
+      </ResponsiveContainer>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <ResponsiveContainer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900 flex items-center">
@@ -287,7 +288,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
                         <div>
                           <h4 className="font-semibold text-gray-900">{prescription.student_name}</h4>
                           <p className="text-sm text-gray-600">ID: {prescription.id_number}</p>
-                          <p className="text-sm text-gray-600">Age: {prescription.student_age}</p>
+                          <p className="text-sm text-gray-600">Age: {prescription?.age}</p>
                         </div>
                       </div>
                     </div>
@@ -307,7 +308,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
                       <div className="space-y-2">
                         <div>
                           <h5 className="text-sm font-medium text-gray-700">Nurse Notes</h5>
-                          <p className="text-sm text-gray-600">{prescription.notes}</p>
+                          <p className="text-sm text-gray-600">{prescription.nurse_notes}</p>
                         </div>
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
                           <div className="flex items-center space-x-1">
@@ -344,7 +345,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
           )}
         </div>
       </div>
-    </div>
+    </ResponsiveContainer>
   );
 };
 

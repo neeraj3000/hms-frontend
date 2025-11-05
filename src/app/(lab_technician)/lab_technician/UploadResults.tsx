@@ -140,6 +140,8 @@ const UploadResults: React.FC<UploadResultsProps> = ({ labReportId, onUploadComp
         body: JSON.stringify(payload),
       });
 
+      
+
       if (response.ok) {
         const data = await response.json();
         setShowSuccess(true);

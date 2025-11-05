@@ -1,7 +1,6 @@
 "use client";
 import React from 'react';
 import NurseDashboard from './NurseDashboard';
-import AuthGuard from '@/components/AuthGuard';
 
 function App() {
   return (

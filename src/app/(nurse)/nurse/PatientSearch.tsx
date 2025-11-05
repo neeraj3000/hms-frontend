@@ -8,7 +8,7 @@ import {
   Eye,
   FileText
 } from 'lucide-react';
-
+import getStatusColor from '@/components/getStatusColor';
 const PatientSearch: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -62,20 +62,20 @@ const PatientSearch: React.FC = () => {
     return matchesSearch && matchesDate && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Initiated by Nurse':
-        return 'bg-blue-100 text-blue-800';
-      case 'Prescribed by Doctor':
-        return 'bg-green-100 text-green-800';
-      case 'Lab Test Requested':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Medication Issued':
-        return 'bg-emerald-100 text-emerald-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'Initiated by Nurse':
+  //       return 'bg-blue-100 text-blue-800';
+  //     case 'Prescribed by Doctor':
+  //       return 'bg-green-100 text-green-800';
+  //     case 'Lab Test Requested':
+  //       return 'bg-yellow-100 text-yellow-800';
+  //     case 'Medication Issued':
+  //       return 'bg-emerald-100 text-emerald-800';
+  //     default:
+  //       return 'bg-gray-100 text-gray-800';
+  //   }
+  // };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -124,9 +124,13 @@ const PatientSearch: React.FC = () => {
                 >
                   <option value="all">All Status</option>
                   <option value="initiated">Initiated by Nurse</option>
-                  <option value="prescribed">Prescribed by Doctor</option>
-                  <option value="lab">Lab Test Requested</option>
-                  <option value="medication">Medication Issued</option>
+                  <option value="prescribed">Medication Prescribed by Doctor</option>
+                  <option value="prescribed_lab">Medication Prescribed and Lab Test Requested</option>
+                  <option value="issued">Medication Issued by Pharmacist</option>
+                  <option value="issued_lab">Medication Issued and Lab Test Requested</option>
+                  <option value="lab_requested">Lab Test Requested</option>
+                  <option value="lab_completed">Lab Test Completed</option>
+                  <option value="issued_completed">Medication Issued and Lab Test Completed</option>
                 </select>
               </div>
             </div>

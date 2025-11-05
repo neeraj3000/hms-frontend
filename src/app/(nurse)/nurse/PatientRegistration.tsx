@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  User, 
-  Mail, 
-  Calendar, 
-  Thermometer, 
-  Activity, 
-  Weight, 
-  FileText,
-  Save,
-  AlertCircle,
-  CheckCircle
-} from 'lucide-react';
+import { User, Mail, Calendar, Save, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
+import PatientImageUpload from '@/components/PatientImageUpload';
+import PatientVitalSigns from '@/components/PatientVitalSigns';
 
 const PatientRegistration: React.FC = () => {
   const { data: session } = useSession();
+  
   const [formData, setFormData] = useState({
     studentId: '',
     name: '',
@@ -32,6 +25,8 @@ const PatientRegistration: React.FC = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -40,7 +35,6 @@ const PatientRegistration: React.FC = () => {
       [name]: value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -56,6 +50,16 @@ const PatientRegistration: React.FC = () => {
         email: email
       }));
     }
+  };
+
+  const handleImageSelect = (file: File, preview: string) => {
+    setSelectedImage(file);
+    setImagePreview(preview);
+  };
+
+  const handleImageRemove = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const validateForm = () => {
@@ -77,7 +81,6 @@ const PatientRegistration: React.FC = () => {
       newErrors.age = 'Please enter a valid age';
     }
 
-    // Validate vitals if provided
     if (formData.temperature && (parseFloat(formData.temperature) < 90 || parseFloat(formData.temperature) > 110)) {
       newErrors.temperature = 'Please enter a valid temperature (90-110°F)';
     }
@@ -91,118 +94,134 @@ const PatientRegistration: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!validateForm()) {
-    return;
-  }
+    if (!validateForm()) {
+      return;
+    }
 
-  setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  try {
-    // Combine BP
-    const bp =
-      formData.bloodPressureSystolic && formData.bloodPressureDiastolic
-        ? `${formData.bloodPressureSystolic}/${formData.bloodPressureDiastolic}`
-        : null;
-
-    // nurseId – get from session or context
-    const nurseId = session?.user?.id;
-
-    // 1️⃣ Check if student exists
-    let studentIdBackend = null;
-    const checkStudentRes = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/students/id_number/${formData.studentId}`
-    );
-
-    if (checkStudentRes.ok) {
-      const studentData = await checkStudentRes.json();
-      studentIdBackend = studentData.id; // backend student.id
-      console.log("Existing student found:", studentData);
-    } else if (checkStudentRes.status === 404) {
-      // 2️⃣ Student does not exist, create it
-      const createStudentRes = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/students`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            id_number: formData.studentId,
-            name: formData.name,
-            email: formData.email,
-            branch: formData.branch || null,
-            section: formData.section || null,
-          }),
+    try {
+      // Upload image to Cloudinary if selected
+      let imageUrl: string | null = null;
+      if (selectedImage) {
+        try {
+          imageUrl = await uploadImageToCloudinary(selectedImage);
+          console.log('Image uploaded to Cloudinary:', imageUrl);
+        } catch (error) {
+          console.error('Failed to upload image to Cloudinary:', error);
+          alert('Failed to upload image. Please try again or continue without image.');
+          // Continue with submission even if image upload fails
         }
-      );
-
-      if (!createStudentRes.ok) {
-        throw new Error(`Error creating student: ${createStudentRes.statusText}`);
       }
 
-      const newStudent = await createStudentRes.json();
-      studentIdBackend = newStudent.id;
-      console.log("Student created:", newStudent);
-    } else {
-      throw new Error(`Error checking student: ${checkStudentRes.statusText}`);
-    }
+      // Combine BP
+      const bp =
+        formData.bloodPressureSystolic && formData.bloodPressureDiastolic
+          ? `${formData.bloodPressureSystolic}/${formData.bloodPressureDiastolic}`
+          : null;
 
-    // 3️⃣ Build prescription payload with student.id
-    const payload = {
-      student_id: studentIdBackend,
-      nurse_id: nurseId,
-      notes: formData.consultationNotes || null,
-      weight: formData.weight || null,
-      bp: bp,
-      temperature: formData.temperature || null,
-    };
+      const nurseId = session?.user?.id;
 
-    console.log("Prescription Payload:", payload);
+      // Check if student exists
+      let studentIdBackend = null;
+      const checkStudentRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/students/id_number/${formData.studentId}`
+      );
 
-    // 4️⃣ Create prescription
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+      if (checkStudentRes.ok) {
+        const studentData = await checkStudentRes.json();
+        studentIdBackend = studentData.id;
+        console.log("Existing student found:", studentData);
+      } else if (checkStudentRes.status === 404) {
+        // Create new student
+        const createStudentRes = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/students`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              id_number: formData.studentId,
+              name: formData.name,
+              email: formData.email,
+              branch: formData.branch || null,
+              section: formData.section || null,
+            }),
+          }
+        );
 
-    if (!res.ok) {
-      throw new Error(`Error creating prescription: ${res.statusText}`);
-    }
+        if (!createStudentRes.ok) {
+          throw new Error(`Error creating student: ${createStudentRes.statusText}`);
+        }
 
-    const data = await res.json();
-    console.log("Prescription created:", data);
+        const newStudent = await createStudentRes.json();
+        studentIdBackend = newStudent.id;
+        console.log("Student created:", newStudent);
+      } else {
+        throw new Error(`Error checking student: ${checkStudentRes.statusText}`);
+      }
 
-    setSubmitSuccess(true);
+      // Build prescription payload
+      const payload = {
+        student_id: studentIdBackend,
+        nurse_id: nurseId,
+        nurse_notes: formData.consultationNotes || null,
+        weight: formData.weight || null,
+        bp: bp,
+        age: formData.age ? parseInt(formData.age) : null,
+        temperature: formData.temperature || null,
+        nurse_image_url: imageUrl, // Cloudinary URL (optional)
+      };
 
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setFormData({
-        studentId: "",
-        name: "",
-        email: "",
-        age: "",
-        temperature: "",
-        bloodPressureSystolic: "",
-        bloodPressureDiastolic: "",
-        weight: "",
-        consultationNotes: "",
-        branch: "",
-        section: "",
+      console.log("Prescription Payload:", payload);
+
+      // Create prescription
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
-      setSubmitSuccess(false);
-    }, 3000);
-  } catch (error) {
-    console.error("Error submitting form:", error);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
 
+      if (!res.ok) {
+        throw new Error(`Error creating prescription: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      console.log("Prescription created:", data);
+
+      setSubmitSuccess(true);
+
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setFormData({
+          studentId: "",
+          name: "",
+          email: "",
+          age: "",
+          temperature: "",
+          bloodPressureSystolic: "",
+          bloodPressureDiastolic: "",
+          weight: "",
+          consultationNotes: "",
+          branch: "",
+          section: "",
+        });
+        setSelectedImage(null);
+        setImagePreview(null);
+        setSubmitSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert('Failed to register patient. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (submitSuccess) {
     return (
@@ -245,6 +264,7 @@ const PatientRegistration: React.FC = () => {
                   value={formData.studentId}
                   onChange={handleInputChange}
                   placeholder="e.g., R200137"
+                  suppressHydrationWarning
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.studentId ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -288,6 +308,7 @@ const PatientRegistration: React.FC = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Enter patient's full name"
+                suppressHydrationWarning
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.name ? 'border-red-300' : 'border-gray-300'
                 }`}
@@ -315,6 +336,7 @@ const PatientRegistration: React.FC = () => {
                   placeholder="Age in years"
                   min="1"
                   max="120"
+                  suppressHydrationWarning
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.age ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -330,108 +352,16 @@ const PatientRegistration: React.FC = () => {
           </div>
 
           {/* Vital Signs */}
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Activity className="w-5 h-5 mr-2 text-green-600" />
-              Vital Signs (Optional)
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div>
-                <label htmlFor="temperature" className="block text-sm font-medium text-gray-700 mb-2">
-                  Temperature (°F)
-                </label>
-                <div className="relative">
-                  <Thermometer className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="number"
-                    id="temperature"
-                    name="temperature"
-                    value={formData.temperature}
-                    onChange={handleInputChange}
-                    placeholder="98.6"
-                    step="0.1"
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.temperature ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                  />
-                </div>
-                {errors.temperature && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.temperature}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Blood Pressure
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    name="bloodPressureSystolic"
-                    value={formData.bloodPressureSystolic}
-                    onChange={handleInputChange}
-                    placeholder="120"
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <span className="flex items-center px-2 text-gray-500">/</span>
-                  <input
-                    type="number"
-                    name="bloodPressureDiastolic"
-                    value={formData.bloodPressureDiastolic}
-                    onChange={handleInputChange}
-                    placeholder="80"
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-2">
-                  Weight (kg)
-                </label>
-                <div className="relative">
-                  <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="number"
-                    id="weight"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleInputChange}
-                    placeholder="70"
-                    step="0.1"
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.weight ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                  />
-                </div>
-                {errors.weight && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.weight}
-                  </p>
-                )}
-              </div>
-
-              {/* <div>
-                <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-2">
-                  Height (cm)
-                </label>
-                <input
-                  type="number"
-                  id="height"
-                  name="height"
-                  value={formData.height}
-                  onChange={handleInputChange}
-                  placeholder="170"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div> */}
-            </div>
-          </div>
+          <PatientVitalSigns
+            formData={{
+              temperature: formData.temperature,
+              bloodPressureSystolic: formData.bloodPressureSystolic,
+              bloodPressureDiastolic: formData.bloodPressureDiastolic,
+              weight: formData.weight,
+            }}
+            errors={errors}
+            onChange={handleInputChange}
+          />
 
           {/* Clinical Information */}
           <div className="border-t border-gray-200 pt-6">
@@ -452,11 +382,20 @@ const PatientRegistration: React.FC = () => {
                   onChange={handleInputChange}
                   rows={4}
                   placeholder="Add any additional observations or notes from the initial assessment"
+                  suppressHydrationWarning
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
               </div>
             </div>
           </div>
+
+          {/* Image Upload */}
+          <PatientImageUpload
+            selectedImage={selectedImage}
+            imagePreview={imagePreview}
+            onImageSelect={handleImageSelect}
+            onImageRemove={handleImageRemove}
+          />
 
           {/* Submit Button */}
           <div className="flex justify-end pt-6 border-t border-gray-200">

@@ -11,6 +11,7 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import PrescriptionDetailsModal from '@/components/PrescriptionDetailsModal';
 
 type LabRequest = {
   id: string | number;
@@ -45,6 +46,13 @@ const LabRequests: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleViewDetails = (prescriptionId: string) => {
+    setSelectedPrescriptionId(prescriptionId);
+    setShowModal(true);
+  };
 
   useEffect(() => {
     fetchLabRequests();
@@ -187,11 +195,11 @@ const LabRequests: React.FC = () => {
 
   const downloadReport = async (requestId: string, fileName: string) => {
     try {
-      const response = await fetch(`/api/lab-reports/${requestId}/download`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports/${requestId}/download`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
+        // headers: {
+        //   'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        // },
       });
 
       if (response.ok) {
@@ -399,7 +407,8 @@ const LabRequests: React.FC = () => {
                       </div>
                       
                       <div className="mt-4">
-                        <button className="flex items-center space-x-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors duration-200 w-full justify-center">
+                        <button onClick={() => handleViewDetails(request.prescription.id.toString())}
+                        className="flex items-center space-x-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors duration-200 w-full justify-center">
                           <Eye className="w-4 h-4" />
                           <span>View Details</span>
                         </button>
@@ -412,6 +421,11 @@ const LabRequests: React.FC = () => {
           )}
         </div>
       </div>
+      <PrescriptionDetailsModal
+        prescriptionId={selectedPrescriptionId}
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+      />
     </div>
   );
 };

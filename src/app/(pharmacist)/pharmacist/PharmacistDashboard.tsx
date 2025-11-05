@@ -8,7 +8,7 @@ import InventoryAnalytics from './InventoryAnalytics';
 import PharmacistProfile from './PharmacistProfile';
 
 const PharmacistDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('prescriptions');
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null);
 
   const renderContent = () => {
@@ -18,7 +18,7 @@ const PharmacistDashboard: React.FC = () => {
       case 'prescriptions':
         return <PrescriptionQueue onSelectPrescription={setSelectedPrescriptionId} setActiveTab={setActiveTab} />;
       case 'issue-medicine':
-        return <IssueMedicine prescriptionId={selectedPrescriptionId} />;
+        return <IssueMedicine prescriptionId={selectedPrescriptionId} setActiveTab={setActiveTab} />;
       case 'inventory':
         return <MedicineInventory />;
       case 'analytics':

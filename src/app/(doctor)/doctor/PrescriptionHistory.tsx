@@ -11,7 +11,7 @@ import {
   TestTube
 } from 'lucide-react';
 import PrescriptionDetailsModal from '@/components/PrescriptionDetailsModal';
-
+import getStatusColor from '@/components/getStatusColor';
 type Medicine = {
   medicine_name?: string;
   quantity_prescribed?: number;
@@ -165,20 +165,20 @@ const PrescriptionHistory: React.FC = () => {
   };
 
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Prescribed by Doctor':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'Lab Test Requested':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Lab Test Completed':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'Medication Issued by Pharmacist':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'Prescribed by Doctor':
+  //       return 'bg-green-100 text-green-800 border-green-200';
+  //     case 'Lab Test Requested':
+  //       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+  //     case 'Lab Test Completed':
+  //       return 'bg-purple-100 text-purple-800 border-purple-200';
+  //     case 'Medication Issued by Pharmacist':
+  //       return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+  //     default:
+  //       return 'bg-gray-100 text-gray-800 border-gray-200';
+  //   }
+  // };
 
   const downloadPrescription = async (prescriptionId: string) => {
     try {
@@ -274,9 +274,14 @@ const PrescriptionHistory: React.FC = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
                 >
                   <option value="all">All Status</option>
-                  <option value="prescribed">Prescribed by Doctor</option>
-                  <option value="lab">Lab Test</option>
-                  <option value="medication">Medication Issued</option>
+                  <option value="initiated">Initiated by Nurse</option>
+                  <option value="prescribed">Medication Prescribed by Doctor</option>
+                  <option value="prescribed_lab">Medication Prescribed and Lab Test Requested</option>
+                  <option value="issued">Medication Issued by Pharmacist</option>
+                  <option value="issued_lab">Medication Issued and Lab Test Requested</option>
+                  <option value="lab_requested">Lab Test Requested</option>
+                  <option value="lab_completed">Lab Test Completed</option>
+                  <option value="issued_completed">Medication Issued and Lab Test Completed</option>
                 </select>
               </div>
             </div>

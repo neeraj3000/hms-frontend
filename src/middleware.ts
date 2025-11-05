@@ -1,15 +1,12 @@
 // middleware.ts
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import { ROLE_ROUTES } from '@/lib/roles';
 
 // Map route prefixes to required roles
-const roleMap: Record<string, string> = {
-  '/admin': 'admin',
-  '/doctor': 'doctor',
-  '/nurse': 'nurse',
-  '/student': 'student',
-  '/pharmacist': 'pharmacist',
-};
+const roleMap: Record<string, string> = Object.fromEntries(
+  ROLE_ROUTES.map((role) => [`/${role}`, role])
+);
 
 export default withAuth(
   function middleware(req) {
@@ -53,5 +50,7 @@ export const config = {
     '/nurse/:path*',
     '/student/:path*',
     '/pharmacist/:path*',
+    '/lab_technician/:path*',
+    '/store_keeper/:path*',
   ],
 };

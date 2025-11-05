@@ -1,12 +1,13 @@
 "use client";
-import AuthGuard from '@/components/AuthGuard';
+import React from 'react';
+import NurseDashboard from './AdminDashboard';
+import AdminDashboard from './AdminDashboard';
 
-export default function Admin() {
+function App() {
   return (
-    // <AuthGuard allowedRoles={['admin']}>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <h1 className="text-2xl font-bold">Hello admin!</h1>
+      <div className="min-h-screen bg-gray-50">
+        <AdminDashboard />
       </div>
-    // </AuthGuard>
-  )
+  );
 }
+export default App;

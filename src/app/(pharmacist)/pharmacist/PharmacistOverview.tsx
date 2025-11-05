@@ -9,6 +9,8 @@ import {
   Pill,
   ShoppingCart
 } from 'lucide-react';
+import StatTile from '@/components/ui/StatTile';
+import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 
 interface PharmacistOverviewProps {
   setActiveTab: (tab: string) => void;
@@ -189,45 +191,30 @@ const PharmacistOverview: React.FC<PharmacistOverviewProps> = ({ setActiveTab })
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statsConfig.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div 
-              key={index} 
-              onClick={stat.onClick}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className={`text-sm mt-1 ${
-                    stat.change.includes('+') ? 'text-green-600' : 
-                    stat.change.includes('Need') ? 'text-red-600' : 'text-blue-600'
-                  }`}>
-                    {stat.change}
-                  </p>
-                </div>
-                <div className={`p-3 rounded-lg bg-${stat.color}-100`}>
-                  <Icon className={`w-6 h-6 text-${stat.color}-600`} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {statsConfig.map((stat, index) => (
+          <StatTile
+            key={index}
+            title={stat.title}
+            value={stat.value}
+            change={stat.change}
+            icon={stat.icon}
+            colorClass={stat.color}
+            onClick={stat.onClick}
+          />
+        ))}
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Pending Prescriptions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
+        <Card>
+          <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <FileText className="w-5 h-5 mr-2 text-blue-600" />
               Pending Prescriptions
             </h3>
-          </div>
-          <div className="p-6">
+          </CardHeader>
+          <CardBody>
             <div className="space-y-4">
               {recentPrescriptions.slice(0, 4).map((prescription: any, index) => (
                 <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
@@ -258,18 +245,18 @@ const PharmacistOverview: React.FC<PharmacistOverviewProps> = ({ setActiveTab })
             >
               View All Prescriptions
             </button>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Low Stock Alerts */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
+        <Card>
+          <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
               Low Stock Alerts
             </h3>
-          </div>
-          <div className="p-6">
+          </CardHeader>
+          <CardBody>
             <div className="space-y-4">
               {lowStockAlerts.map((medicine: any, index) => (
                 <div key={index} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100">
@@ -295,19 +282,20 @@ const PharmacistOverview: React.FC<PharmacistOverviewProps> = ({ setActiveTab })
             >
               Manage Inventory
             </button>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="mt-8">
+        <Card>
+          <CardHeader>
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
             <TrendingUp className="w-5 h-5 mr-2 text-purple-600" />
             Quick Actions
           </h3>
-        </div>
-        <div className="p-6">
+          </CardHeader>
+          <CardBody>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button 
               onClick={() => setActiveTab('prescriptions')}
@@ -342,18 +330,19 @@ const PharmacistOverview: React.FC<PharmacistOverviewProps> = ({ setActiveTab })
               <div className="text-green-600">→</div>
             </button>
           </div>
-        </div>
-      </div>
+          </CardBody>
+        </Card>
 
       {/* Today's Summary */}
-      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="mt-8">
+        <Card>
+          <CardHeader>
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-green-600" />
             Today's Summary
           </h3>
-        </div>
-        <div className="p-6">
+          </CardHeader>
+          <CardBody>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <p className="text-2xl font-bold text-green-600">{stats.issuedToday}</p>
@@ -368,6 +357,8 @@ const PharmacistOverview: React.FC<PharmacistOverviewProps> = ({ setActiveTab })
               <p className="text-sm text-purple-800 mt-1">Total Medicines in Stock</p>
             </div>
           </div>
+          </CardBody>
+        </Card>
         </div>
       </div>
     </div>

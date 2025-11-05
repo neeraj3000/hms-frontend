@@ -1,18 +1,12 @@
-'use client';
-import { useAuth } from '@/contexts/AuthContext';
+"use client";
+import React from 'react';
+import StudentDashboard from './StudentDashboard';
 
-export default function Student() {
-  const { logout } = useAuth();
-
+function App() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center space-y-4">
-      <h1 className="text-2xl font-bold">Hello Bro!!</h1>
-      <button
-        onClick={logout}
-        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-      >
-        Log out
-      </button>
-    </div>
+      <div className="min-h-screen bg-gray-50">
+        <StudentDashboard />
+      </div>
   );
 }
+export default App;

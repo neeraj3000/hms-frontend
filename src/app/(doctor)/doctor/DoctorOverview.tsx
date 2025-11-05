@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   TestTube
 } from 'lucide-react';
-
+import getStatusColor from '@/components/getStatusColor';
+import StatTile from '@/components/ui/StatTile';
+import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 interface DoctorOverviewProps {
   setActiveTab: (tab: string) => void;
 }
@@ -140,20 +142,20 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Initiated by Nurse':
-        return 'bg-blue-100 text-blue-800';
-      case 'Prescribed by Doctor':
-        return 'bg-green-100 text-green-800';
-      case 'Lab Test Requested':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Lab Test Completed':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'Initiated by Nurse':
+  //       return 'bg-blue-100 text-blue-800';
+  //     case 'Prescribed by Doctor':
+  //       return 'bg-green-100 text-green-800';
+  //     case 'Lab Test Requested':
+  //       return 'bg-yellow-100 text-yellow-800';
+  //     case 'Lab Test Completed':
+  //       return 'bg-purple-100 text-purple-800';
+  //     default:
+  //       return 'bg-gray-100 text-gray-800';
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -183,44 +185,30 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statsConfig.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div 
-              key={index} 
-              onClick={stat.onClick}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className={`text-sm mt-1 ${
-                    stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {stat.change} from yesterday
-                  </p>
-                </div>
-                <div className={`p-3 rounded-lg bg-${stat.color}-100`}>
-                  <Icon className={`w-6 h-6 text-${stat.color}-600`} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {statsConfig.map((stat, index) => (
+          <StatTile
+            key={index}
+            title={stat.title}
+            value={stat.value}
+            change={`${stat.change} from yesterday`}
+            icon={stat.icon}
+            colorClass={stat.color}
+            onClick={stat.onClick}
+          />
+        ))}
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Pending Patients */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
+        <Card>
+          <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Clock className="w-5 h-5 mr-2 text-yellow-600" />
               Pending Reviews
             </h3>
-          </div>
-          <div className="p-6">
+          </CardHeader>
+          <CardBody>
             <div className="space-y-4">
               {recentPrescriptions.filter((prescription: any) => prescription.status === 'Initiated by Nurse' || prescription.status === 'Lab Test Completed').map((prescription: any, index) => (
                 <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
@@ -250,18 +238,18 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
             >
               View All Patients
             </button>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
+        <Card>
+          <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
               Quick Actions
             </h3>
-          </div>
-          <div className="p-6">
+          </CardHeader>
+          <CardBody>
             <div className="space-y-4">
               <button 
                 onClick={() => setActiveTab('queue')}
@@ -296,19 +284,20 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
                 <div className="text-purple-600">→</div>
               </button>
             </div>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Today's Schedule */}
-      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="mt-8">
+        <Card>
+          <CardHeader>
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-purple-600" />
             Today's Schedule
           </h3>
-        </div>
-        <div className="p-6">
+          </CardHeader>
+          <CardBody>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <p className="text-2xl font-bold text-green-600">9:00 AM - 1:00 PM</p>
@@ -323,7 +312,8 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
               <p className="text-sm text-purple-800 mt-1">Lab Reviews</p>
             </div>
           </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
     </div>
   );

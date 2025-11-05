@@ -1,13 +1,14 @@
 'use client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSession } from 'next-auth/react';
 
 export default function DebugPage() {
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const { logout } = useAuth();
 
-  const logout = () => {
-    localStorage.removeItem('role');
-    localStorage.removeItem('email');
-    window.location.href = '/';
+  const handleLogout = () => {
+    // prefer central logout implementation
+    logout();
   };
 
   return (
@@ -22,7 +23,7 @@ export default function DebugPage() {
             <div>
               <strong>User:</strong> 
               <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                {user ? `${user.role} - ${user.email}` : 'Not logged in'}
+                {session?.user?.email ? `${session.user.email}` : 'Not logged in'}
               </span>
             </div>
           </div>
@@ -32,7 +33,7 @@ export default function DebugPage() {
           <h2 className="text-xl font-semibold mb-4">Actions</h2>
           <div className="space-x-4">
             <button 
-              onClick={logout}
+              onClick={handleLogout}
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
             >
               Logout

@@ -14,9 +14,10 @@ import {
 
 interface IssueMedicineProps {
   prescriptionId: string | null;
+  setActiveTab: (tab: string) => void;
 }
 
-const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
+const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId, setActiveTab  }) => {
   const [prescription, setPrescription] = useState<any>(null);
   const [student, setStudent] = useState<any>(null);
   const [medicines, setMedicines] = useState<any[]>([]);
@@ -46,7 +47,7 @@ const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
         console.log("Prescription Data: ", prescriptionData);
         setPrescription(prescriptionData);
         setMedicines(prescriptionData.medicines || []);
-        setStudent(prescriptionData.student_details || null);
+        setStudent(prescriptionData.student || null);
       }
     } catch (error) {
       console.error('Error fetching prescription details:', error);
@@ -94,6 +95,25 @@ const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
     setMedicines(updatedMedicines);
   };
 
+  const getPrescriptionStatus = (prescription: any): string => {
+    const hasMedsPrescribed = prescription.medicines.some((med: { quantity_prescribed: number; }) => med.quantity_prescribed > 0);
+    const hasMedsIssued = prescription.medicines.some((med: { quantity_issued: number; }) => med.quantity_issued && med.quantity_issued > 0);
+    const hasLabRequested = prescription.lab_reports.some((lab: { status: string; }) => lab.status === 'Lab Test Requested');
+    const hasLabResult = prescription.lab_reports.some((lab: { status: string; }) => lab.status === 'Lab Test Completed');
+
+    if (hasMedsIssued && hasLabResult) return 'Medication issued and Lab Test Completed';
+    if (hasMedsIssued && hasLabRequested) return 'Medication issued and Lab Test Requested';
+    if (hasMedsPrescribed && !hasMedsIssued && hasLabRequested) return 'Medication Prescribed and Lab Test Requested';
+    if (hasMedsPrescribed && !hasMedsIssued && hasLabResult) return 'Medication Prescribed and Lab Test Completed';
+    if (hasLabResult) return 'Lab Test Completed';
+    if (hasLabRequested) return 'Lab Test Requested';
+    if (hasMedsIssued) return 'Medication Issued by Pharmacist';
+    if (hasMedsPrescribed) return 'Medication Prescribed by Doctor';
+
+    return 'Initiated by Nurse';
+  };
+
+
   const handleIssueMedicines = async () => {
     setSaving(true);
     try {
@@ -119,7 +139,7 @@ const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              quantity: medicine.quantity_issued
+              quantity: medicine.medicine.quantity - medicine.quantity_issued
             }),
           });
         }
@@ -133,7 +153,7 @@ const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'Medication Issued by Pharmacist'
+          status: getPrescriptionStatus(prescription)
         }),
       });
 
@@ -141,6 +161,7 @@ const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
       setTimeout(() => {
         setShowSuccess(false);
         // Redirect back to prescriptions
+        setActiveTab('prescriptions');
       }, 3000);
     } catch (error) {
       console.error('Error issuing medicines:', error);
@@ -319,12 +340,12 @@ const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h4 className="font-medium text-gray-900">{medicine.medicine.name}</h4>
-                        <p className="text-sm text-gray-600">{medicine.medicine.category}</p>
+                        <h4 className="font-medium text-gray-900">{medicine?.medicine?.name}</h4>
+                        <p className="text-sm text-gray-600">{medicine?.medicine?.category}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-600">Available Stock</p>
-                        <p className="font-medium text-gray-900">{medicine.medicine.quantity} units</p>
+                        <p className="font-medium text-gray-900">{medicine?.medicine?.quantity} units</p>
                       </div>
                     </div>
                     
@@ -344,7 +365,7 @@ const IssueMedicine: React.FC<IssueMedicineProps> = ({ prescriptionId }) => {
                         <input
                           type="number"
                           min="0"
-                          max={Math.min(medicine.quantity_prescribed, medicine.medicine.quantity)}
+                          max={Math.min(medicine.quantity_prescribed, medicine?.medicine?.quantity)}
                           value={medicine.quantity_issued || ''}
                           onChange={(e) => updateQuantityIssued(index, parseInt(e.target.value) || 0)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"

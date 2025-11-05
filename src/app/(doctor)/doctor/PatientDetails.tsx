@@ -1,4 +1,7 @@
+import PatientAudioUpload from '@/components/PatientAudioUpload';
 import React, { useState, useEffect } from 'react';
+import PatientImageUpload from '@/components/PatientImageUpload';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
 import { 
   User, 
   Calendar, 
@@ -20,9 +23,54 @@ interface PatientDetailsProps {
   setActiveTab: (tab: string) => void;
 }
 
+interface StudentType {
+  id?: number;
+  student_id?: string;
+  id_number?: string;
+  name?: string;
+  email?: string;
+  branch?: string;
+  section?: string;
+}
+
+interface PrescriptionType {
+  id?: number | string;
+  student_id?: string;
+  status?: string;
+  notes?: string;
+  temperature?: string;
+  bp?: string;
+  weight?: string;
+  created_at?: string;
+  nurse_notes?: string;
+  age?: number;
+}
+
+interface Medicine {
+  id: number;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+}
+
+interface SelectedMedicine {
+  medicineId: number | '';
+  quantity: number;
+}
+
 const PatientDetails: React.FC<PatientDetailsProps> = ({ prescriptionId, setActiveTab }) => {
-  const [prescription, setPrescription] = useState<any>(null);
-  const [student, setStudent] = useState<any>(null);
+  // Doctor audio upload state
+  const [doctorAudioUrl, setDoctorAudioUrl] = useState<string | null>(null);
+  // Audio upload handlers
+  const handleAudioUpload = (url: string) => {
+    setDoctorAudioUrl(url);
+  };
+  const handleAudioRemove = () => {
+    setDoctorAudioUrl(null);
+  };
+  const [prescription, setPrescription] = useState<PrescriptionType | null>(null);
+  const [student, setStudent] = useState<StudentType | null>(null);
   const { data: session, status } = useSession(); 
   interface Medicine {
     id: number;
@@ -32,12 +80,44 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({ prescriptionId, setActi
     unit: string;
   }
   const [availableMedicines, setAvailableMedicines] = useState<Medicine[]>([]);
-  const [selectedMedicines, setSelectedMedicines] = useState<any[]>([]);
+  const [selectedMedicines, setSelectedMedicines] = useState<SelectedMedicine[]>([]);
   const [labTests, setLabTests] = useState<string[]>([]);
   const [doctorNotes, setDoctorNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Doctor image upload state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [doctorImageUrl, setDoctorImageUrl] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  // Handle image select/remove
+  const handleImageSelect = (file: File, preview: string) => {
+    setSelectedImage(file);
+    setImagePreview(preview);
+  };
+
+  const handleImageRemove = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setDoctorImageUrl(null);
+  };
+
+  // Upload image to Cloudinary and set URL
+  const handleImageUpload = async () => {
+    if (!selectedImage) return;
+    setImageUploading(true);
+    try {
+      const url = await uploadImageToCloudinary(selectedImage);
+      setDoctorImageUrl(url);
+      setSelectedImage(null);
+      setImagePreview(null);
+    } catch (err) {
+      alert('Image upload failed.');
+    } finally {
+      setImageUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (prescriptionId) {
@@ -60,8 +140,8 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({ prescriptionId, setActi
       if (prescriptionResponse.ok) {
         const prescriptionData = await prescriptionResponse.json();
         console.log('Fetched prescription:', prescriptionData);
-        setPrescription(prescriptionData);
-        setDoctorNotes(prescriptionData.notes || '');
+  setPrescription(prescriptionData as PrescriptionType);
+  setDoctorNotes(prescriptionData.notes || '');
 
         // Fetch student details using student_id
         const studentResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/students/${prescriptionData.student_id}`, {
@@ -74,7 +154,7 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({ prescriptionId, setActi
 
         if (studentResponse.ok) {
           const studentData = await studentResponse.json();
-          setStudent(studentData);
+          setStudent(studentData as StudentType);
         }
       }
     } catch (error) {
@@ -116,7 +196,7 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({ prescriptionId, setActi
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched medicines:', data);
-        setAvailableMedicines(data);
+        setAvailableMedicines(data as Medicine[]);
       }
     } catch (error) {
       console.error('Error fetching medicines:', error);
@@ -135,9 +215,12 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({ prescriptionId, setActi
     setSelectedMedicines([...selectedMedicines, { medicineId: '', quantity: 1 }]);
   };
 
-  const updateMedicine = (index: number, field: string, value: any) => {
+  const updateMedicine = (index: number, field: 'medicineId' | 'quantity', value: number | '') => {
     const updated = [...selectedMedicines];
-    updated[index] = { ...updated[index], [field]: value };
+    const current = { ...updated[index] } as SelectedMedicine;
+    if (field === 'medicineId') current.medicineId = value as number | '';
+    if (field === 'quantity') current.quantity = value as number;
+    updated[index] = current;
     setSelectedMedicines(updated);
   };
 
@@ -159,6 +242,7 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({ prescriptionId, setActi
     setLabTests(labTests.filter((_, i) => i !== index));
   };
 
+
 const handleSavePrescription = async () => {
   console.log("🔹 handleSavePrescription called");
   setSaving(true);
@@ -168,18 +252,37 @@ const handleSavePrescription = async () => {
     let status = "Initiated by Nurse";
 
     if (selectedMedicines.length > 0 && labTests.length > 0) {
-      status = "Prescribed and Lab Test Requested";
+      status = "Medication Prescribed and Lab Test Requested";
     } else if (selectedMedicines.length > 0) {
-      status = "Prescribed by Doctor";
+      status = "Medication Prescribed by Doctor";
     } else if (labTests.length > 0) {
       status = "Lab Test Requested";
     }
 
-    const updateData = {
+
+    // If image selected but not uploaded, upload it first
+    let imageUrl = doctorImageUrl;
+    if (selectedImage && !doctorImageUrl) {
+      try {
+        imageUrl = await uploadImageToCloudinary(selectedImage);
+        setDoctorImageUrl(imageUrl);
+      } catch (err) {
+        alert('Image upload failed.');
+      }
+    }
+
+    // Prepare update data
+    const updateData: any = {
       doctor_id: doctorId,
-      notes: doctorNotes,
+      doctor_notes: doctorNotes,
       status: status,
     };
+    if (imageUrl) {
+      updateData.doctor_image_url = imageUrl;
+    }
+    if (doctorAudioUrl) {
+      updateData.audio_url = doctorAudioUrl;
+    }
 
     console.log("🩺 Update Data:", updateData);
 
@@ -203,7 +306,6 @@ const handleSavePrescription = async () => {
         const medicineResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/prescription-medicines`, {
           method: 'POST',
           headers: {
-            // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -229,7 +331,6 @@ const handleSavePrescription = async () => {
         const testResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports`, {
           method: 'POST',
           headers: {
-            // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -354,11 +455,11 @@ const handleSavePrescription = async () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Branch</label>
-                  <p className="text-gray-900">{student?.branch}</p>
+                  <p className="text-gray-900">{student?.branch || "CS"}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Created At</label>
-                  <p className="text-gray-900">{new Date(prescription?.created_at).toLocaleString()}</p>
+                  <p className="text-gray-900">{prescription?.created_at ? new Date(prescription.created_at).toLocaleString() : 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -389,6 +490,10 @@ const handleSavePrescription = async () => {
                   <p className="text-sm text-gray-600">Weight</p>
                   <p className="font-medium text-gray-900">{prescription?.weight || 'N/A'}</p>
                 </div>
+                <div>
+                  <p className="text-sm text-gray-600">Age</p>
+                  <p className="font-medium text-gray-900">{prescription?.age || 'N/A'}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -404,7 +509,7 @@ const handleSavePrescription = async () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nurse Notes</label>
-                <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{prescription?.notes || 'No notes available'}</p>
+                <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{prescription?.nurse_notes || 'No notes available'}</p>
               </div>
             </div>
           </div>
@@ -458,11 +563,11 @@ const handleSavePrescription = async () => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">Medicine</label>
                           <select
                             value={medicine.medicineId}
-                            onChange={(e) => updateMedicine(index, 'medicineId', e.target.value)}
+                            onChange={(e) => updateMedicine(index, 'medicineId', e.target.value ? Number(e.target.value) : '')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
                             <option value="">Select Medicine</option>
-                            {availableMedicines.map((med: any) => (
+                            {availableMedicines.map((med: Medicine) => (
                               <option key={med.id} value={med.id}>
                                 {med.name} (Stock: {med.quantity})
                               </option>
@@ -534,6 +639,56 @@ const handleSavePrescription = async () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Doctor Image Upload Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6">
+              <PatientImageUpload
+                selectedImage={selectedImage}
+                imagePreview={imagePreview}
+                onImageSelect={handleImageSelect}
+                onImageRemove={handleImageRemove}
+              />
+              {/* Upload button for image */}
+              {selectedImage && !doctorImageUrl && (
+                <button
+                  type="button"
+                  onClick={handleImageUpload}
+                  className="mt-4 flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg"
+                  disabled={imageUploading}
+                >
+                  {imageUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Upload Image</span>
+                    </>
+                  )}
+                </button>
+              )}
+              {/* Show uploaded image preview if available */}
+              {doctorImageUrl && !selectedImage && (
+                <div className="mt-4">
+                  <img src={doctorImageUrl} alt="Doctor uploaded" className="w-32 h-32 object-cover rounded-lg border" />
+                  <p className="text-sm text-gray-600 mt-2">Image uploaded successfully.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Doctor Audio Upload Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mt-6">
+            <div className="p-6">
+              <PatientAudioUpload
+                audioUrl={doctorAudioUrl}
+                onAudioUpload={handleAudioUpload}
+                onAudioRemove={handleAudioRemove}
+              />
             </div>
           </div>
 

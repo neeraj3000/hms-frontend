@@ -30,7 +30,6 @@ interface Student {
 interface Medicine {
   id: number;
   name: string;
-  category?: string;
 }
 
 interface MedicineEntry {
@@ -112,13 +111,13 @@ const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
         medicines: [
           {
             id: 1,
-            medicine: { id: 1, name: 'Paracetamol 500mg', category: 'Analgesic' },
+            medicine: { id: 1, name: 'Paracetamol 500mg' },
             quantity_prescribed: 10,
             quantity_issued: 10,
           },
           {
             id: 2,
-            medicine: { id: 2, name: 'Ibuprofen 400mg', category: 'Anti-inflammatory' },
+            medicine: { id: 2, name: 'Ibuprofen 400mg' },
             quantity_prescribed: 6,
             quantity_issued: 6,
           },
@@ -379,7 +378,7 @@ const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
                           <div className="flex justify-between items-start">
                             <div>
                               <h4 className="font-medium text-gray-900">{medicine.medicine.name}</h4>
-                              <p className="text-sm text-gray-600">{medicine.medicine.category}</p>
+                              {/* <p className="text-sm text-gray-600">{medicine.medicine.category}</p> */}
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium text-gray-900">

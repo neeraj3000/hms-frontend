@@ -21,8 +21,8 @@ const StoreKeeperDashboard: React.FC = () => {
         return <MedicineInventory />;
       case 'indent':
         return <RequestIndent />;
-      case 'maintenance':
-        return <MaintenanceSchedule />;
+      // case 'maintenance':
+      //   return <MaintenanceSchedule />;
       case 'profile':
         return <StoreKeeperProfile />;
       default:
@@ -31,9 +31,9 @@ const StoreKeeperDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full max-w-full">
       <StoreKeeperNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="pt-16">
+      <div className="pt-16 w-full max-w-full px-2 sm:px-6 lg:px-8">
         {renderContent()}
       </div>
     </div>

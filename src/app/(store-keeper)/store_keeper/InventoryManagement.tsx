@@ -256,18 +256,18 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onSelectItem 
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <div>
+  <div className="w-full max-w-full mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-full">
+        <div className="p-2 sm:p-6 border-b border-gray-200 w-full">
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full">
+            <div className="w-full min-w-0">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                 <Package className="w-6 h-6 mr-3 text-orange-600" />
                 Inventory Management
               </h2>
               <p className="text-gray-600 mt-2">Manage hospital equipment and infrastructure</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="w-full flex flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3 sm:justify-end min-w-0">
               <label className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors duration-200">
                 <Upload className="w-4 h-4" />
                 <span>Upload Excel</span>
@@ -297,8 +297,8 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onSelectItem 
         </div>
 
         {/* Search and Filter Section */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-2 sm:p-6 bg-gray-50 border-b border-gray-200 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 w-full">
             {/* Search Input */}
             <div>
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
@@ -340,7 +340,7 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onSelectItem 
         </div>
 
         {/* Items List */}
-        <div className="p-6">
+  <div className="p-2 sm:p-6 w-full">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
               Inventory Items ({filteredItems.length})
@@ -353,8 +353,8 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onSelectItem 
               <p className="text-gray-600">No items found matching your criteria</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <div className="overflow-x-auto w-full">
+              <table className="min-w-full divide-y divide-gray-200 w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

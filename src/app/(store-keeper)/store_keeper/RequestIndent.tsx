@@ -93,56 +93,80 @@ const RequestIndent: React.FC = () => {
   if (loading) return <div className="text-center py-16 text-gray-500">Loading...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="w-full max-w-full mx-auto px-2 sm:px-6 py-4 sm:py-8">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <div>
+        <div className="p-6 border-b border-gray-200 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center w-full">
+          <div className="w-full min-w-0">
             <h2 className="text-2xl font-bold flex items-center text-gray-900">
               <FileSpreadsheet className="w-6 h-6 text-purple-600 mr-3" /> Indent History
             </h2>
             <p className="text-gray-600">View your past indent requests</p>
           </div>
-          <button
-            onClick={() => setShowUploadDialog(true)}
-            className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
-          >
-            <PlusCircle className="w-4 h-4 mr-2" /> Request Indent
-          </button>
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
+            <button
+              onClick={() => setShowUploadDialog(true)}
+              className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg w-full sm:w-auto"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" /> Request Indent
+            </button>
+          </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-2 sm:p-6 w-full">
           {indents.length === 0 ? (
             <div className="text-center py-10 text-gray-600">No indents found.</div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">File</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Uploaded At</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Approved By</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            <>
+              {/* Mobile / Tablet: cards */}
+              <div className="grid gap-2 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:hidden w-full">
                 {indents.map((indent) => (
-                  <tr key={indent.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm flex items-center space-x-2">
+                  <div key={indent.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col justify-between w-full">
+                    <div className="flex items-center space-x-2 mb-2">
                       <Eye className="w-4 h-4 text-blue-600" />
-                      <a href={indent.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                      <a href={indent.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 font-medium truncate">
                         {indent.file_name}
                       </a>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(indent.uploaded_at).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4">{getStatusBadge(indent.status)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {indent.approved_by || "—"}
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-1">Uploaded: {new Date(indent.uploaded_at).toLocaleString()}</div>
+                    <div className="mb-1">{getStatusBadge(indent.status)}</div>
+                    <div className="text-sm text-gray-600">Approved By: {indent.approved_by || "—"}</div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop: table (lg+) */}
+              <div className="hidden lg:block overflow-x-auto w-full">
+                <table className="min-w-full divide-y divide-gray-200 w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">File</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Uploaded At</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Approved By</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {indents.map((indent) => (
+                      <tr key={indent.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm flex items-center space-x-2">
+                          <Eye className="w-4 h-4 text-blue-600" />
+                          <a href={indent.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                            {indent.file_name}
+                          </a>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {new Date(indent.uploaded_at).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">{getStatusBadge(indent.status)}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {indent.approved_by || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

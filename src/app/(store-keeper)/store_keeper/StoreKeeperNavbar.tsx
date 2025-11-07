@@ -26,7 +26,7 @@ const StoreKeeperNavbar: React.FC<StoreKeeperNavbarProps> = ({ activeTab, setAct
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'medicine-inventory', label: 'Medicine Inventory', icon: Package },
     { id: 'indent', label: 'Request Indent', icon: BarChart3 },
-    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+    // { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
@@ -75,7 +75,7 @@ const StoreKeeperNavbar: React.FC<StoreKeeperNavbarProps> = ({ activeTab, setAct
   };
 
   return (
-    <>
+    <div className="w-full max-w-full">
       <RoleNavbar
         brandBgClass="bg-orange-600"
         brandIcon={Package}
@@ -95,7 +95,7 @@ const StoreKeeperNavbar: React.FC<StoreKeeperNavbarProps> = ({ activeTab, setAct
         onConfirm={confirmLogout}
         highlightText="You will be signed out of your account and redirected to the home page."
       />
-    </>
+    </div>
   );
 };
 

@@ -164,26 +164,26 @@ const MedicineInventory: React.FC = () => {
     return <div className="text-center py-20 text-gray-600">Loading Medicines...</div>;
 
   return (
-    <ResponsiveContainer className="max-w-7xl mx-auto px-6 py-8">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
-          <div className="w-full sm:flex-1">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center">
-              <Package className="w-6 h-6 mr-3 text-purple-600" />
+  <ResponsiveContainer className="w-full max-w-full px-2 sm:px-6 py-4 sm:py-8 mx-auto">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-full">
+  <div className="p-2 sm:p-6 border-b border-gray-200 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full">
+          <div className="w-full min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center mb-1">
+              <Package className="w-6 h-6 mr-2 text-purple-600" />
               <span className="truncate">Medicine Inventory</span>
             </h2>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Manage and monitor your medicine stock.</p>
+            <p className="text-sm sm:text-base text-gray-600">Manage and monitor your medicine stock.</p>
           </div>
-          <div className="w-full sm:w-auto flex flex-wrap justify-end items-center gap-3">
+          <div className="w-full flex flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3 sm:justify-end min-w-0">
             <button
               onClick={handleDownloadInventory}
-              className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg whitespace-nowrap"
+              className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm whitespace-nowrap"
             >
               <Download className="w-4 h-4 mr-2" /> Download Excel
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg whitespace-nowrap"
+              className="flex items-center justify-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm whitespace-nowrap"
             >
               <Plus className="w-4 h-4 mr-2" /> Add Medicine
             </button>
@@ -191,7 +191,7 @@ const MedicineInventory: React.FC = () => {
         </div>
 
         {/* Search & Filter */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div className="p-2 sm:p-6 bg-gray-50 border-b border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Search Medicines
@@ -231,27 +231,27 @@ const MedicineInventory: React.FC = () => {
         </div>
 
         {/* Medicines Table: mobile cards (below lg) and table for lg+ */}
-        <div className="p-6">
+  <div className="p-2 sm:p-6 w-full">
           {filteredMedicines.length === 0 ? (
             <div className="text-center text-gray-600 py-8">No medicines found.</div>
           ) : (
             <>
               {/* Mobile / Tablet: cards */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:hidden">
+              <div className="grid gap-2 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:hidden w-full">
                 {filteredMedicines.map((med) => {
                   const stock = getStockStatus(med.quantity);
                   return (
                     <div
                       key={med.id}
-                      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col justify-between"
+                      className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm flex flex-col justify-between w-full"
                     >
                       <div>
                         <div className="flex items-start justify-between">
-                          <div>
-                            <div className="text-base font-semibold text-gray-900">{med.name}</div>
-                            <div className="text-sm text-gray-600 mt-1">{med.brand || '—'}</div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-base font-semibold text-gray-900 truncate">{med.name}</div>
+                            <div className="text-sm text-gray-600 mt-1 truncate">{med.brand || '—'}</div>
                           </div>
-                          <div className="ml-2">
+                          <div className="ml-2 flex-shrink-0">
                             <span
                               className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded ${stock.color}`}
                             >
@@ -290,7 +290,7 @@ const MedicineInventory: React.FC = () => {
               </div>
 
               {/* Desktop: table (lg+) */}
-              <div className="hidden lg:block overflow-x-auto">
+              <div className="hidden lg:block overflow-x-auto w-full">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>

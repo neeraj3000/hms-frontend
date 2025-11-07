@@ -344,41 +344,71 @@ const PrescriptionHistory: React.FC = () => {
 
                     {/* Prescription Details */}
                     <div className="lg:col-span-2">
-                      <div className="space-y-3">
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700">Doctor's Notes</h5>
-                          <p className="text-sm text-gray-600">{prescription.notes}</p>
-                        </div>
-                        
+                      <div className="space-y-4">
+
+                        {/* Doctor's Notes (only if available) */}
+                        {prescription?.doctor_notes && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-700">Doctor's Notes</h5>
+                            <p className="text-sm text-gray-600 whitespace-pre-line">
+                              {prescription.doctor_notes}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Nurse's Notes (only if available) */}
+                        {prescription?.nurse_notes && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-700">Nurse's Notes</h5>
+                            <p className="text-sm text-gray-600 whitespace-pre-line">
+                              {prescription.nurse_notes}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Medicines (only if available) */}
                         {prescription?.medicines?.length > 0 && (
                           <div>
-                            <h5 className="text-sm font-medium text-gray-700 flex items-center">
+                            <h5 className="text-sm font-medium text-gray-700 flex items-center mb-1">
                               <Pill className="w-4 h-4 mr-1" />
                               Medicines ({prescription.medicines.length})
                             </h5>
-                            <div className="text-sm text-gray-600">
+
+                            <div className="text-sm text-gray-600 space-y-1">
                               {prescription.medicines.map((med: any, idx: number) => (
-                                <div key={idx} className="flex justify-between">
-                                  <span>{med.medicine_name}</span>
-                                  <span>Qty: {med.quantity_prescribed}</span>
+                                <div
+                                  key={idx}
+                                  className="flex justify-between items-start border-b border-gray-100 py-1"
+                                >
+                                  {/* Medicine name wraps naturally */}
+                                  <span
+                                    className="truncate max-w-[180px] sm:max-w-[250px] md:max-w-[300px]"
+                                    title={med.medicine_name}
+                                  >
+                                    {med.medicine_name}
+                                  </span>
+                                  <span className="ml-2 text-gray-700 font-medium">
+                                    Qty: {med.quantity_prescribed}
+                                  </span>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
 
+                        {/* Lab Reports (only if available) */}
                         {prescription?.lab_reports?.length > 0 && (
                           <div>
                             <h5 className="text-sm font-medium text-gray-700 flex items-center">
                               <TestTube className="w-4 h-4 mr-1" />
                               Lab Reports ({prescription.lab_reports.length})
                             </h5>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-600 space-y-1">
                               {prescription.lab_reports.map((report: any, idx: number) => (
                                 <div key={idx}>• {report.test_name} ({report.status})</div>
                               ))}
                             </div>
-                          </div>  
+                          </div>
                         )}
                       </div>
                     </div>

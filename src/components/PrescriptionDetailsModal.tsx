@@ -372,14 +372,18 @@ const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
                       <Pill className="w-5 h-5 mr-2 text-blue-600" />
                       Prescribed Medicines ({prescription.medicines.length})
                     </h3>
+
                     <div className="space-y-3">
                       {prescription.medicines.map((medicine: MedicineEntry, index: number) => (
                         <div key={index} className="bg-white p-4 rounded-lg border">
                           <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-gray-900">{medicine.medicine.name}</h4>
+                            <div className="max-w-[70%] break-words">
+                              <h4 className="font-medium text-gray-900 whitespace-normal break-words leading-snug">
+                                {medicine.medicine.name}
+                              </h4>
                               {/* <p className="text-sm text-gray-600">{medicine.medicine.category}</p> */}
                             </div>
+
                             <div className="text-right">
                               <p className="text-sm font-medium text-gray-900">
                                 Prescribed: {medicine.quantity_prescribed}

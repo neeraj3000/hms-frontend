@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  Search, 
-  Filter, 
+import React, { useState, useEffect } from "react";
+import {
+  FileText,
+  Search,
+  Filter,
   Calendar,
   User,
   Eye,
   Download,
   Pill,
-  TestTube
-} from 'lucide-react';
-import PrescriptionDetailsModal from '@/components/PrescriptionDetailsModal';
-import getStatusColor from '@/components/getStatusColor';
-import ResponsiveContainer from '@/components/ui/ResponsiveContainer';
+  TestTube,
+} from "lucide-react";
+import PrescriptionDetailsModal from "@/components/PrescriptionDetailsModal";
+import getStatusColor from "@/components/getStatusColor";
+import ResponsiveContainer from "@/components/ui/ResponsiveContainer";
 
 type Medicine = {
   medicine_name?: string;
@@ -55,12 +55,16 @@ type Prescription = {
 
 const RecentPrescriptions: React.FC = () => {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [filteredPrescriptions, setFilteredPrescriptions] = useState<Prescription[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterDate, setFilterDate] = useState('');
+  const [filteredPrescriptions, setFilteredPrescriptions] = useState<
+    Prescription[]
+  >([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDate, setFilterDate] = useState("");
   const [loading, setLoading] = useState(true);
-  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null);
+  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<
+    string | null
+  >(null);
   const [showModal, setShowModal] = useState(false);
 
   const handleViewDetails = (prescriptionId: string) => {
@@ -78,75 +82,89 @@ const RecentPrescriptions: React.FC = () => {
 
   const fetchPrescriptionHistory = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
         setPrescriptions(data);
-        console.log('Fetched prescriptions:', data);
+        console.log("Fetched prescriptions:", data);
       }
     } catch (error) {
-      console.error('Error fetching prescription history:', error);
+      console.error("Error fetching prescription history:", error);
       // Sample data for demo
       const samplePrescriptions = [
         {
           id: 1,
-          student_id: 'R200137',
-          student_name: 'Rajesh Kumar',
-          created_at: '2024-01-15T10:30:00Z',
-          status: 'Medication Issued by Pharmacist',
-          nurse_notes: 'Patient presented with high fever and severe headache. Prescribed symptomatic treatment.',
+          student_id: "R200137",
+          student_name: "Rajesh Kumar",
+          created_at: "2024-01-15T10:30:00Z",
+          status: "Medication Issued by Pharmacist",
+          nurse_notes:
+            "Patient presented with high fever and severe headache. Prescribed symptomatic treatment.",
           medicines: [
-            { medicine_name: 'Paracetamol 500mg', quantity_prescribed: 10 },
-            { medicine_name: 'Ibuprofen 400mg', quantity_prescribed: 6 }
+            { medicine_name: "Paracetamol 500mg", quantity_prescribed: 10 },
+            { medicine_name: "Ibuprofen 400mg", quantity_prescribed: 6 },
           ],
           lab_reports: [],
           student: {
-            name: 'Rajesh Kumar',
-            id_number: 'R200137'
-          }
+            name: "Rajesh Kumar",
+            id_number: "R200137",
+          },
         },
         {
           id: 2,
-          student_id: 'R200142',
-          student_name: 'Priya Sharma',
-          created_at: '2024-01-15T11:15:00Z',
-          status: 'Lab Test Completed',
-          nurse_notes: 'Patient complains of stomach pain. Ordered lab tests to rule out infection.',
+          student_id: "R200142",
+          student_name: "Priya Sharma",
+          created_at: "2024-01-15T11:15:00Z",
+          status: "Lab Test Completed",
+          nurse_notes:
+            "Patient complains of stomach pain. Ordered lab tests to rule out infection.",
           medicines: [],
           lab_reports: [
-            { test_name: 'Complete Blood Count', status: 'Lab Test Completed' },
-            { test_name: 'Stool Examination', status: 'Lab Test Completed' }
+            { test_name: "Complete Blood Count", status: "Lab Test Completed" },
+            { test_name: "Stool Examination", status: "Lab Test Completed" },
           ],
           student: {
-            name: 'Priya Sharma',
-            id_number: 'R200142'
-          }
+            name: "Priya Sharma",
+            id_number: "R200142",
+          },
         },
         {
-          id: 'PRX-003',
-          patientName: 'Amit Singh',
-          studentId: 'R200155',
-          date: '2024-01-14',
-          time: '2:45 PM',
-          status: 'Medication Issued by Pharmacist',
-          diagnosis: 'Upper respiratory tract infection',
+          id: "PRX-003",
+          patientName: "Amit Singh",
+          studentId: "R200155",
+          date: "2024-01-14",
+          time: "2:45 PM",
+          status: "Medication Issued by Pharmacist",
+          diagnosis: "Upper respiratory tract infection",
           medicines: [
-            { name: 'Amoxicillin 250mg', quantity: 15, instructions: 'Take 1 capsule three times daily' },
-            { name: 'Cetirizine 10mg', quantity: 7, instructions: 'Take 1 tablet at bedtime' }
+            {
+              name: "Amoxicillin 250mg",
+              quantity: 15,
+              instructions: "Take 1 capsule three times daily",
+            },
+            {
+              name: "Cetirizine 10mg",
+              quantity: 7,
+              instructions: "Take 1 tablet at bedtime",
+            },
           ],
           labTests: [],
-          doctor_notes: 'Common cold with mild throat infection. Prescribed antibiotic course.',
+          doctor_notes:
+            "Common cold with mild throat infection. Prescribed antibiotic course.",
           student: {
-            name: 'Amit Singh',
-            id_number: 'R200155'
-          }
-        }
+            name: "Amit Singh",
+            id_number: "R200155",
+          },
+        },
       ];
       setPrescriptions(samplePrescriptions);
     } finally {
@@ -162,26 +180,35 @@ const RecentPrescriptions: React.FC = () => {
       const idStr = prescription?.id?.toString() || "";
 
       const matchesSearch =
-        (prescription?.student?.name?.toLowerCase().includes(searchTermLower) ?? false) ||
-        (prescription?.student?.id_number?.toLowerCase().includes(searchTermLower) ?? false) ||
-        (prescription?.student_name?.toLowerCase().includes(searchTermLower) ?? false) ||
-        (prescription?.student_id?.toLowerCase().includes(searchTermLower) ?? false) ||
+        (prescription?.student?.name?.toLowerCase().includes(searchTermLower) ??
+          false) ||
+        (prescription?.student?.id_number
+          ?.toLowerCase()
+          .includes(searchTermLower) ??
+          false) ||
+        (prescription?.student_name?.toLowerCase().includes(searchTermLower) ??
+          false) ||
+        (prescription?.student_id?.toLowerCase().includes(searchTermLower) ??
+          false) ||
         idStr.includes(searchTermLower);
 
       const matchesStatus =
-        filterStatus === 'all' ||
-        (prescription?.status?.toLowerCase().includes(filterStatus.toLowerCase()) ?? false);
+        filterStatus === "all" ||
+        (prescription?.status
+          ?.toLowerCase()
+          .includes(filterStatus.toLowerCase()) ??
+          false);
 
       const matchesDate =
-        !filterDate ||
-        (prescription?.created_at?.split('T')[0] === filterDate);
+        !filterDate || prescription?.created_at?.split("T")[0] === filterDate;
 
       return matchesSearch && matchesStatus && matchesDate;
     });
 
     // Sort by creation date (newest first)
     filtered.sort(
-      (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
     setFilteredPrescriptions(filtered);
@@ -190,14 +217,17 @@ const RecentPrescriptions: React.FC = () => {
   const downloadPrescription = async (prescriptionId: string) => {
     try {
       // Sample API call - replace with your endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions/${prescriptionId}/download`, {
-        method: 'GET',
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions/${prescriptionId}/download`,
+        {
+          method: "GET",
+        }
+      );
 
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
         a.download = `prescription-${prescriptionId}.pdf`;
         document.body.appendChild(a);
@@ -206,8 +236,10 @@ const RecentPrescriptions: React.FC = () => {
         document.body.removeChild(a);
       }
     } catch (error) {
-      console.error('Error downloading prescription:', error);
-      alert('Download functionality will be implemented with backend integration');
+      console.error("Error downloading prescription:", error);
+      alert(
+        "Download functionality will be implemented with backend integration"
+      );
     }
   };
 
@@ -240,7 +272,9 @@ const RecentPrescriptions: React.FC = () => {
             <FileText className="w-6 h-6 mr-3 text-blue-600" />
             Recent Prescriptions
           </h2>
-          <p className="text-gray-600 mt-2">View and manage all prescription records</p>
+          <p className="text-gray-600 mt-2">
+            View and manage all prescription records
+          </p>
         </div>
 
         {/* Search and Filter Section */}
@@ -248,7 +282,10 @@ const RecentPrescriptions: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search Input */}
             <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="search"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Search Prescriptions
               </label>
               <div className="relative">
@@ -266,7 +303,10 @@ const RecentPrescriptions: React.FC = () => {
 
             {/* Status Filter */}
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="status"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Filter by Status
               </label>
               <div className="relative">
@@ -279,20 +319,33 @@ const RecentPrescriptions: React.FC = () => {
                 >
                   <option value="all">All Status</option>
                   <option value="initiated">Initiated by Nurse</option>
-                  <option value="prescribed">Medication Prescribed by Doctor</option>
-                  <option value="prescribed_lab">Medication Prescribed and Lab Test Requested</option>
-                  <option value="issued">Medication Issued by Pharmacist</option>
-                  <option value="issued_lab">Medication Issued and Lab Test Requested</option>
+                  <option value="prescribed">
+                    Medication Prescribed by Doctor
+                  </option>
+                  <option value="prescribed_lab">
+                    Medication Prescribed and Lab Test Requested
+                  </option>
+                  <option value="issued">
+                    Medication Issued by Pharmacist
+                  </option>
+                  <option value="issued_lab">
+                    Medication Issued and Lab Test Requested
+                  </option>
                   <option value="lab_requested">Lab Test Requested</option>
                   <option value="lab_completed">Lab Test Completed</option>
-                  <option value="issued_completed">Medication Issued and Lab Test Completed</option>
+                  <option value="issued_completed">
+                    Medication Issued and Lab Test Completed
+                  </option>
                 </select>
               </div>
             </div>
 
             {/* Date Filter */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="date"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Filter by Date
               </label>
               <div className="relative">
@@ -320,12 +373,17 @@ const RecentPrescriptions: React.FC = () => {
           {filteredPrescriptions.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No prescriptions found matching your criteria</p>
+              <p className="text-gray-600">
+                No prescriptions found matching your criteria
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
               {filteredPrescriptions.map((prescription: any, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors duration-200">
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors duration-200"
+                >
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     {/* Patient Info */}
                     <div className="lg:col-span-1">
@@ -335,16 +393,27 @@ const RecentPrescriptions: React.FC = () => {
                         </div>
                         <div>
                           <h4 className="font-semibold text-gray-900">
-                            {prescription.student?.name || prescription.student_name || prescription.patientName}
+                            {prescription.student?.name ||
+                              prescription.student_name ||
+                              prescription.patientName}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            ID: {prescription.student?.id_number || prescription.student_id || prescription.studentId}
+                            ID:{" "}
+                            {prescription.student?.id_number ||
+                              prescription.student_id ||
+                              prescription.studentId}
                           </p>
-                          <p className="text-xs text-gray-500">PRX: {prescription.id}</p>
+                          <p className="text-xs text-gray-500">
+                            PRX: {prescription.id}
+                          </p>
                         </div>
                       </div>
                       <div className="mt-3">
-                        <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(prescription.status)}`}>
+                        <span
+                          className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(
+                            prescription.status
+                          )}`}
+                        >
                           {prescription.status}
                         </span>
                       </div>
@@ -352,43 +421,85 @@ const RecentPrescriptions: React.FC = () => {
 
                     {/* Prescription Details */}
                     <div className="lg:col-span-2">
-                      <div className="space-y-3">
+                      <div className="space-y-4">
+                        {/*  Notes Section */}
                         <div>
-                          <h5 className="text-sm font-medium text-gray-700">Notes</h5>
-                          <p className="text-sm text-gray-600">
-                            {prescription.doctor_notes || prescription.nurse_notes || 'No notes available'}
-                          </p>
+                          {/* Doctor + Nurse Notes */}
+                          {prescription?.doctor_notes ||
+                          prescription?.nurse_notes ? (
+                            <div className="space-y-2">
+                              {prescription?.doctor_notes && (
+                                <p className="text-sm text-gray-600 whitespace-pre-line">
+                                  <span className="font-medium text-gray-700">
+                                    Doctor’s Notes:{" "}
+                                  </span>
+                                  {prescription.doctor_notes}
+                                </p>
+                              )}
+                              {prescription?.nurse_notes && (
+                                <p className="text-sm text-gray-600 whitespace-pre-line">
+                                  <span className="font-medium text-gray-700">
+                                    Nurse’s Notes:{" "}
+                                  </span>
+                                  {prescription.nurse_notes}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">
+                              No notes available.
+                            </p>
+                          )}
                         </div>
-                        
+
                         {prescription?.medicines?.length > 0 && (
                           <div>
-                            <h5 className="text-sm font-medium text-gray-700 flex items-center">
-                              <Pill className="w-4 h-4 mr-1" />
+                            <h5 className="text-sm font-medium text-gray-700 flex items-center mb-2">
+                              <Pill className="w-4 h-4 mr-1 text-blue-600" />
                               Medicines ({prescription.medicines.length})
                             </h5>
-                            <div className="text-sm text-gray-600">
-                              {prescription.medicines.map((med: any, idx: number) => (
-                                <div key={idx} className="flex justify-between">
-                                  <span>{med.medicine_name || med.name}</span>
-                                  <span>Qty: {med.quantity_prescribed || med.quantity}</span>
-                                </div>
-                              ))}
+
+                            <div className="text-sm text-gray-600 space-y-1">
+                              {prescription.medicines.map(
+                                (med: any, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="flex justify-between items-start border-b border-gray-100 py-1"
+                                  >
+                                    {/* Medicine name wraps naturally */}
+                                    <span
+                                      className="truncate max-w-[180px] sm:max-w-[250px] md:max-w-[300px]"
+                                      title={med.medicine_name}
+                                    >
+                                      {med.medicine_name}
+                                    </span>
+                                    <span className="ml-2 text-gray-700 font-medium">
+                                      Qty: {med.quantity_prescribed}
+                                    </span>
+                                  </div>
+                                )
+                              )}
                             </div>
                           </div>
                         )}
 
+                        {/* ✅ Lab Reports Section */}
                         {prescription?.lab_reports?.length > 0 && (
                           <div>
                             <h5 className="text-sm font-medium text-gray-700 flex items-center">
                               <TestTube className="w-4 h-4 mr-1" />
                               Lab Reports ({prescription.lab_reports.length})
                             </h5>
-                            <div className="text-sm text-gray-600">
-                              {prescription.lab_reports.map((report: any, idx: number) => (
-                                <div key={idx}>• {report.test_name} ({report.status})</div>
-                              ))}
+                            <div className="text-sm text-gray-600 space-y-1">
+                              {prescription.lab_reports.map(
+                                (report: any, idx: number) => (
+                                  <div key={idx}>
+                                    • {report.test_name} ({report.status})
+                                  </div>
+                                )
+                              )}
                             </div>
-                          </div>  
+                          </div>
                         )}
                       </div>
                     </div>
@@ -399,10 +510,11 @@ const RecentPrescriptions: React.FC = () => {
                         <div className="flex items-center space-x-1 mb-1">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {prescription.created_at 
-                              ? new Date(prescription.created_at).toLocaleDateString()
-                              : prescription.date || 'N/A'
-                            }
+                            {prescription.created_at
+                              ? new Date(
+                                  prescription.created_at
+                                ).toLocaleDateString()
+                              : prescription.date || "N/A"}
                           </span>
                         </div>
                         {prescription.doctor_id && (
@@ -411,17 +523,21 @@ const RecentPrescriptions: React.FC = () => {
                           </p>
                         )}
                       </div>
-                      
+
                       <div className="flex space-x-2 mt-4">
-                        <button 
-                          onClick={() => handleViewDetails(prescription.id.toString())}
+                        <button
+                          onClick={() =>
+                            handleViewDetails(prescription.id.toString())
+                          }
                           className="flex items-center space-x-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors duration-200"
                         >
                           <Eye className="w-4 h-4" />
                           <span>View</span>
                         </button>
-                        <button 
-                          onClick={() => downloadPrescription(prescription.id.toString())}
+                        <button
+                          onClick={() =>
+                            downloadPrescription(prescription.id.toString())
+                          }
                           className="flex items-center space-x-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors duration-200"
                         >
                           <Download className="w-4 h-4" />

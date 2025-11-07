@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Bell, User, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import LogoutConfirmModal from '@/components/LogoutConfirmModal'; // ✅ adjust the path as needed
+import LogoutConfirmModal from '@/components/LogoutConfirmModal';
 
 interface TopNavbarProps {
   title?: string;
@@ -25,7 +25,6 @@ export default function TopNavbar({
     },
   };
 
-  // ✅ Modal state
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const confirmLogout = () => {
@@ -35,22 +34,31 @@ export default function TopNavbar({
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
+      <header
+        className="
+          sticky top-0 z-50
+          bg-white
+          shadow-md
+          border-b border-gray-200
+          backdrop-blur-md
+        "
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3">
+          <div className="flex items-center justify-between gap-3">
             {/* Left Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={onMenuClick}
+                aria-label="Open menu"
                 className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Menu className="w-6 h-6" />
               </button>
 
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h1>
+              <div className="truncate">
+                <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">{title}</h1>
                 {subtitle && (
-                  <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{subtitle}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-0.5 truncate">{subtitle}</p>
                 )}
               </div>
             </div>
@@ -73,25 +81,34 @@ export default function TopNavbar({
                   <p className="text-sm font-medium text-gray-900">Admin</p>
                   <p className="text-xs text-gray-500">Administrator</p>
                 </div>
-                <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
                   <User className="w-4 h-4 text-white" />
                 </div>
               </div>
 
-              {/* ✅ Logout Button */}
+              {/* Logout: mobile icon */}
               <button
                 onClick={() => setShowLogoutConfirm(true)}
-                className="flex items-center space-x-3 w-full px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                >
+                aria-label="Logout"
+                className="md:hidden p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+
+              {/* Logout: full button on larger screens */}
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="hidden md:flex items-center space-x-3 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+              >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Logout</span>
-            </button>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* ✅ Logout Confirmation Modal */}
+      {/* Logout Confirmation Modal */}
       <LogoutConfirmModal
         open={showLogoutConfirm}
         onCancel={() => setShowLogoutConfirm(false)}

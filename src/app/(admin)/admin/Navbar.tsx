@@ -40,7 +40,7 @@ export default function Navbar({
 
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  Hospital Management System
+                  MediCare HMS
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
                   Admin Dashboard

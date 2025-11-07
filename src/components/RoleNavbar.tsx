@@ -37,6 +37,7 @@ export default function RoleNavbar({
   onShowLogoutConfirm,
 }: RoleNavbarProps) {
   return (
+    <>
     <nav className="fixed top-0 left-0 right-0 bg-white shadow-lg border-b border-gray-200 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -103,8 +104,11 @@ export default function RoleNavbar({
         </div>
       </div>
 
+      </nav>
+
+      {/* Mobile menu rendered outside of fixed nav so it pushes page content instead of overlapping */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-top border-gray-200">
+        <div className="md:hidden bg-white border-t border-gray-200">
           <div className="px-4 py-2 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon
@@ -141,12 +145,12 @@ export default function RoleNavbar({
               >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Logout</span>
-              </button> 
+              </button>
             </div>
           </div>
         </div>
       )}
-    </nav>
+    </>
   )
 }
 

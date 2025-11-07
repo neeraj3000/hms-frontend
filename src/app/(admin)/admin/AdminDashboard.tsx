@@ -10,51 +10,44 @@ import PatientRecordsView from './PatientRecordsView';
 import AnalyticsView from './AnalyticsView';
 import InventoryView from './InventoryView';
 import AnomalyView from './AnomalyView';
-import { DashboardStats, User, Student, Medicine, Prescription, MedicineAnalytics, AnomalyAlert } from '@/types';
-import { LayoutDashboard, Users, UserCog, Activity, Package, AlertTriangle, FileText, Settings } from 'lucide-react';
-import { adminService } from '@/services/adminService';
-import {
-  fallbackStats,
-  fallbackUsers,
-  fallbackStudents,
-  fallbackMedicines,
-  fallbackPrescriptions,
-  fallbackMedicineAnalytics,
-  fallbackAnomalies
-} from './fallbackData';
 import IndentsHistory from './IndentHistory';
+import {
+  DashboardStats,
+  User,
+  Student,
+  Medicine,
+  Prescription,
+  MedicineAnalytics,
+  AnomalyAlert,
+} from '@/types';
+import {
+  LayoutDashboard,
+  Users,
+  UserCog,
+  Activity,
+  Package,
+  AlertTriangle,
+  FileText,
+  Settings,
+} from 'lucide-react';
+import { adminService } from '@/services/adminService';
 
 export default function AdminDashboard() {
-  type View = 'overview' | 'users' | 'patients' | 'analytics' | 'inventory' | 'anomalies' | 'reports' | 'settings' | 'indent';
+  type View =
+    | 'overview'
+    | 'users'
+    | 'patients'
+    | 'analytics'
+    | 'inventory'
+    | 'anomalies'
+    | 'reports'
+    | 'settings'
+    | 'indent';
 
   const [activeView, setActiveView] = useState<View>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Map each view to its loading state
-  const [loadingStates, setLoadingStates] = useState<Record<View, boolean>>({
-    overview: false,
-    users: false,
-    patients: false,
-    analytics: false,
-    inventory: false,
-    anomalies: false,
-    reports: false,
-    settings: false,
-    indent: false
-  });
-
-  // Map each view to its error
-  const [errors, setErrors] = useState<Record<View, string | null>>({
-    overview: null,
-    users: null,
-    patients: null,
-    analytics: null,
-    inventory: null,
-    anomalies: null,
-    reports: null,
-    settings: null,
-    indent: null
-  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -63,12 +56,12 @@ export default function AdminDashboard() {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [medicineAnalytics, setMedicineAnalytics] = useState<MedicineAnalytics[]>([]);
   const [anomalies, setAnomalies] = useState<AnomalyAlert[]>([]);
-  const [notifications, setNotifications] = useState<{ message: string; type: 'success' | 'error' | 'warning' }[]>([]);
 
+  // 🔹 Fetch Data by View
   useEffect(() => {
     const fetchData = async () => {
-      setLoadingStates(prev => ({ ...prev, [activeView]: true }));
-      setErrors(prev => ({ ...prev, [activeView]: null }));
+      setLoading(true);
+      setError(null);
 
       try {
         switch (activeView) {
@@ -81,7 +74,7 @@ export default function AdminDashboard() {
           case 'patients': {
             const [studentsData, prescriptionsData] = await Promise.all([
               adminService.getStudents(),
-              adminService.getPrescriptions()
+              adminService.getPrescriptions(),
             ]);
             setStudents(studentsData);
             setPrescriptions(prescriptionsData);
@@ -97,86 +90,85 @@ export default function AdminDashboard() {
             setAnomalies(await adminService.getAnomalies());
             break;
         }
-      } catch (err) {
-        console.error('API Error:', err);
-        let statusCode: number | null = null;
-        let errorMessage = 'An unexpected error occurred';
-
-        if (err instanceof Error) {
-          errorMessage = err.message;
-          const anyErr = err as any;
-          if (anyErr.response?.status) statusCode = anyErr.response.status;
-        }
-
-        // Friendly message
-        let friendlyMessage = errorMessage;
-        if (statusCode === 404) friendlyMessage = 'Requested data not found (404). Showing fallback data.';
-        else if (statusCode === 401 || statusCode === 403)
-          friendlyMessage = 'You do not have permission to view this data.';
-        else if (statusCode) friendlyMessage = `Request failed with status ${statusCode}.`;
-
-        // Save error for this view
-        setErrors(prev => ({ ...prev, [activeView]: friendlyMessage }));
-
-        // Load fallback data gracefully
-        switch (activeView) {
-          case 'overview':
-            setStats(fallbackStats);
-            break;
-          case 'users':
-            setUsers(fallbackUsers);
-            break;
-          case 'patients':
-            setStudents(fallbackStudents);
-            setPrescriptions(fallbackPrescriptions);
-            break;
-          case 'analytics':
-            setMedicineAnalytics(fallbackMedicineAnalytics);
-            break;
-          case 'inventory':
-            setMedicines(fallbackMedicines);
-            break;
-          case 'anomalies':
-            setAnomalies(fallbackAnomalies);
-            break;
-        }
-
-        // Add notification
-        setNotifications(prev => [
-          ...prev,
-          { message: `Failed to load ${activeView} data: ${friendlyMessage}`, type: 'error' }
-        ]);
+      } catch (err: any) {
+        console.error('Error fetching data:', err);
+        const msg =
+          err.response?.data?.detail ||
+          err.message ||
+          'An unexpected error occurred while fetching data.';
+        setError(msg);
       } finally {
-        setLoadingStates(prev => ({ ...prev, [activeView]: false }));
+        setLoading(false);
       }
     };
 
     fetchData();
   }, [activeView]);
 
-  // View rendering logic
-  const renderView = () => {
-    // ✅ Helper to detect if fallback data exists (to still show UI)
-    const hasFallbackData = (view: View) => {
-      switch (view) {
-        case 'overview':
-          return !!stats;
-        case 'users':
-          return users.length > 0;
-        case 'patients':
-          return students.length > 0 || prescriptions.length > 0;
-        case 'analytics':
-          return medicineAnalytics.length > 0;
-        case 'inventory':
-          return medicines.length > 0;
-        case 'anomalies':
-          return anomalies.length > 0;
-        default:
-          return false;
-      }
-    };
+  // 🔹 CRUD Handlers
+  const handleUserAdd = async (userData: Partial<User>) => {
+    try {
+      await adminService.createUser(userData);
+      toast.success('User added successfully!');
+      setUsers(await adminService.getUsers());
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to add user');
+    }
+  };
 
-    if (loadingStates[activeView]) {
+  const handleUserUpdate = async (id: number, userData: Partial<User>) => {
+    try {
+      await adminService.updateUser(id, userData);
+      toast.success('User updated successfully!');
+      setUsers(await adminService.getUsers());
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to update user');
+    }
+  };
+
+  const handleUserDelete = async (id: number) => {
+    try {
+      await adminService.deleteUser(id);
+      toast.success('User deleted successfully!');
+      setUsers(await adminService.getUsers());
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to delete user');
+    }
+  };
+
+  const handleMedicineAdd = async (medicineData: Partial<Medicine>) => {
+    try {
+      await adminService.createMedicine(medicineData);
+      toast.success('Medicine added successfully!');
+      setMedicines(await adminService.getMedicines());
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to add medicine');
+    }
+  };
+
+  const handleMedicineUpdate = async (id: number, medicineData: Partial<Medicine>) => {
+    try {
+      await adminService.updateMedicine(id, medicineData);
+      toast.success('Medicine updated successfully!');
+      setMedicines(await adminService.getMedicines());
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to update medicine');
+    }
+  };
+
+  const handleMedicineDelete = async (id: number) => {
+    try {
+      await adminService.deleteMedicine(id);
+      toast.success('Medicine deleted successfully!');
+      setMedicines(await adminService.getMedicines());
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to delete medicine');
+    }
+  };
+
+  // 🔹 View Rendering Logic
+  const renderView = () => {
+    if (loading) {
       return (
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -184,21 +176,17 @@ export default function AdminDashboard() {
       );
     }
 
-    // ✅ Display fallback data even when an error occurs
-    // (don't block rendering with an error screen unless there is *no* fallback data)
-    if (errors[activeView] && !hasFallbackData(activeView)) {
+    if (error) {
       return (
-        <div className="flex items-center justify-center h-full text-center text-red-500">
-          <div>
-            <p className="text-xl font-semibold mb-2">Error Loading Data</p>
-            <p>{errors[activeView]}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Retry
-            </button>
-          </div>
+        <div className="flex flex-col items-center justify-center h-full text-center text-red-500">
+          <p className="text-xl font-semibold mb-2">Error Loading Data</p>
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
         </div>
       );
     }
@@ -237,85 +225,6 @@ export default function AdminDashboard() {
     }
   };
 
-// 🔹 Add User
-const handleUserAdd = async (userData: Partial<User>) => {
-  try {
-    await adminService.createUser(userData);
-    toast.success('User added successfully!');
-    console.log('✅ User added successfully');
-    await adminService.getUsers?.(); // refresh UI if function exists
-  } catch (error: any) {
-    console.error('Error adding user:', error);
-    toast.error(error.response?.data?.detail || 'Failed to add user');
-  }
-};
-
-// 🔹 Update User
-const handleUserUpdate = async (id: number, userData: Partial<User>) => {
-  try {
-    await adminService.updateUser(id, userData);
-    toast.success('User updated successfully!');
-    console.log('✅ User updated successfully');
-    await adminService.getUsers?.();
-  } catch (error: any) {
-    console.error('Error updating user:', error);
-    toast.error(error.response?.data?.detail || 'Failed to update user');
-  }
-};
-
-// 🔹 Delete User
-const handleUserDelete = async (id: number) => {
-  try {
-    await adminService.deleteUser(id);
-    toast.success('User deleted successfully!');
-    console.log('✅ User deleted successfully');
-    await adminService.getUsers?.();
-  } catch (error: any) {
-    console.error('Error deleting user:', error);
-    toast.error(error.response?.data?.detail || 'Failed to delete user');
-  }
-};
-
-// 🔹 Add Medicine
-const handleMedicineAdd = async (medicineData: Partial<Medicine>) => {
-  try {
-    await adminService.createMedicine(medicineData);
-    toast.success('Medicine added successfully!');
-    console.log('✅ Medicine added successfully');
-    await adminService.getMedicines?.();
-  } catch (error: any) {
-    console.error('Error adding medicine:', error);
-    toast.error(error.response?.data?.detail || 'Failed to add medicine');
-  }
-};
-
-// 🔹 Update Medicine
-const handleMedicineUpdate = async (id: number, medicineData: Partial<Medicine>) => {
-  try {
-    await adminService.updateMedicine(id, medicineData);
-    toast.success('Medicine updated successfully!');
-    console.log('✅ Medicine updated successfully');
-    await adminService.getMedicines?.();
-  } catch (error: any) {
-    console.error('Error updating medicine:', error);
-    toast.error(error.response?.data?.detail || 'Failed to update medicine');
-  }
-};
-
-// 🔹 Delete Medicine
-const handleMedicineDelete = async (id: number) => {
-  try {
-    await adminService.deleteMedicine(id);
-    toast.success('Medicine deleted successfully!');
-    console.log('✅ Medicine deleted successfully');
-    await adminService.getMedicines?.();
-  } catch (error: any) {
-    console.error('Error deleting medicine:', error);
-    toast.error(error.response?.data?.detail || 'Failed to delete medicine');
-  }
-};
-
-
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'users', label: 'User Management', icon: Users },
@@ -325,14 +234,32 @@ const handleMedicineDelete = async (id: number) => {
     { id: 'indent', label: 'Indents', icon: FileText },
     { id: 'anomalies', label: 'Anomaly Detection', icon: AlertTriangle },
     { id: 'reports', label: 'Reports', icon: FileText },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <SideNav items={navItems} active={activeView} onChange={(id) => setActiveView(id as View)} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopNavbar title="Hospital Management System" subtitle="Admin Dashboard" notificationCount={5} onMenuClick={() => setSidebarOpen(true)} />
+    <div className="flex min-h-screen bg-gray-50 transition-all duration-300">
+      {/* Sidebar */}
+      <SideNav
+        items={navItems}
+        active={activeView}
+        onChange={(id) => setActiveView(id as View)}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      {/* Main Content */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 bg-gray-50 transition-all duration-300 ${
+          sidebarOpen ? 'lg:ml-64' : ''
+        }`}
+      >
+        <TopNavbar
+          title="MediCare HMS"
+          subtitle="Admin Dashboard"
+          notificationCount={5}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{renderView()}</main>
       </div>
     </div>

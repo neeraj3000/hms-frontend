@@ -4,6 +4,7 @@ import LabTechnicianOverview from './LabTechOverview';
 import LabTestQueue from './LabTestQueue';
 import UploadResults from './UploadResults';
 import LabTechnicianProfile from './LabTechProfile';
+import Profile from '@/components/Profile';
 
 const LabTechnicianDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'queue' | 'upload' | 'profile'>('queue');
@@ -34,7 +35,7 @@ const LabTechnicianDashboard: React.FC = () => {
           onUploadComplete={handleUploadComplete}
         />;
       case 'profile':
-        return <LabTechnicianProfile />;
+        return <Profile color="teal" />;
       default:
         return <LabTechnicianOverview setActiveTab={setActiveTab} />;
     }

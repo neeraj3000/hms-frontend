@@ -18,10 +18,11 @@ interface DoctorOverviewProps {
 
 const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
   const [stats, setStats] = useState({
+    totalPatientsToday: 0,
     totalPrescriptions: 0,
     pendingPrescriptions: 0,
     completedPrescriptions: 0,
-    labReportsRequested: 0
+    pendingLabTests: 0
   });
   interface Prescription {
     id: number;
@@ -42,10 +43,10 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
   const fetchDashboardData = async () => {
     try {
       // Fetch doctor dashboard statistics
-      const statsResponse = await fetch('/api/doctor/dashboard/stats', {
+      const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/doctor-stats`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json',
         },
       });
@@ -59,21 +60,24 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
         },
       });
 
-      if (statsResponse.ok && prescriptionsResponse.ok) {
+      if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        const prescriptionsData = await prescriptionsResponse.json();
-        
+        console.log("stats data", statsData)
         setStats(statsData);
+      }
+      if(prescriptionsResponse.ok) {
+        const prescriptionsData = await prescriptionsResponse.json();
         setRecentPrescriptions(prescriptionsData);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       // Sample data for demo
       setStats({
+        totalPatientsToday: 20,
         totalPrescriptions: 45,
         pendingPrescriptions: 8,
         completedPrescriptions: 37,
-        labReportsRequested: 12
+        pendingLabTests: 12
       });
       setRecentPrescriptions([
         { 
@@ -100,11 +104,19 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
 
   const statsConfig = [
     {
-      title: 'Total Prescriptions',
-      value: stats.totalPrescriptions.toString(),
+      title: 'Total Pateints Today',
+      value: stats.totalPatientsToday.toString(),
       change: '+8%',
       icon: Users,
       color: 'blue',
+      onClick: () => setActiveTab('queue')
+    },
+    {
+      title: 'Total Prescriptions',
+      value: stats.totalPrescriptions.toString(),
+      change: '+8%',
+      icon: ClipboardList,
+      color: 'green',
       onClick: () => setActiveTab('queue')
     },
     {
@@ -116,16 +128,8 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
       onClick: () => setActiveTab('queue')
     },
     {
-      title: 'Completed',
-      value: stats.completedPrescriptions.toString(),
-      change: '+12%',
-      icon: ClipboardList,
-      color: 'green',
-      onClick: () => setActiveTab('prescriptions')
-    },
-    {
       title: 'Lab Reports',
-      value: stats.labReportsRequested.toString(),
+      value: stats.pendingLabTests.toString(),
       change: '+3%',
       icon: TestTube,
       color: 'purple',

@@ -94,7 +94,7 @@ const RecentPrescriptions: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setPrescriptions(data);
+        setPrescriptions(data.data);
         console.log("Fetched prescriptions:", data);
       }
     } catch (error) {
@@ -173,6 +173,7 @@ const RecentPrescriptions: React.FC = () => {
   };
 
   const filterPrescriptions = () => {
+    console.log("prescriptions type:", typeof prescriptions, prescriptions);
     const filtered = prescriptions.filter((prescription: any) => {
       const searchTermLower = searchTerm.toLowerCase();
 
@@ -483,7 +484,7 @@ const RecentPrescriptions: React.FC = () => {
                           </div>
                         )}
 
-                        {/* ✅ Lab Reports Section */}
+                        {/*  Lab Reports Section */}
                         {prescription?.lab_reports?.length > 0 && (
                           <div>
                             <h5 className="text-sm font-medium text-gray-700 flex items-center">

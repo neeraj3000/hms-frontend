@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Mail, 
@@ -10,23 +10,55 @@ import {
   Camera,
   Shield,
   Award,
-  Clock
+  Clock,
+  Stethoscope
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
-const Profile: React.FC = () => {
+const DoctorProfile: React.FC = () => {
+  const { data: session } = useSession();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@medicarehosp.com',
-    phone: '+91 9876543210',
-    employeeId: 'NRS001',
-    department: 'General Medicine',
-    position: 'Senior Nurse',
-    joinDate: '2020-03-15',
-    address: 'Rajam, Andhra Pradesh, India',
-    experience: '8 years',
-    qualification: 'B.Sc. Nursing, M.Sc. Nursing'
+    name: "",
+    email: "",
+    phone: "",
+    employeeId: "",
+    department: "",
+    position: "",
+    qualification: "",
+    experience: "",
+    joinDate: "",
+    address: "",
+    licenseNumber: "",
   });
+
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      // Sample API call - replace with your endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/staff-profiles/${session?.user?.id}`, {
+        method: 'GET',
+        headers: {
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Fetched profile data:", data);
+        setProfileData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      // Using sample data for demo
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -36,17 +68,35 @@ const Profile: React.FC = () => {
     }));
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically save to backend
-    console.log('Profile updated:', profileData);
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      // Sample API call - replace with your endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/staff-profiles/${session?.user?.id}`, {
+        method: 'PUT',
+        headers: {
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      if (response.ok) {
+        setIsEditing(false);
+        console.log('Profile updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const stats = [
-    { label: 'Patients Registered', value: '1,247', icon: User, color: 'blue' },
-    { label: 'Years of Service', value: '4.5', icon: Award, color: 'green' },
-    { label: 'Average Processing Time', value: '8 min', icon: Clock, color: 'purple' },
-    { label: 'Success Rate', value: '98.5%', icon: Shield, color: 'emerald' }
+    { label: 'Patients Treated', value: '2,847', icon: User, color: 'blue' },
+    { label: 'Years of Experience', value: '12', icon: Award, color: 'green' },
+    { label: 'Prescriptions Issued', value: '3,156', icon: Stethoscope, color: 'purple' },
+    { label: 'Success Rate', value: '98.9%', icon: Shield, color: 'emerald' }
   ];
 
   return (
@@ -57,26 +107,25 @@ const Profile: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-6 text-center">
               <div className="relative inline-block">
-                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="w-12 h-12 text-blue-600" />
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
+                  <User className="w-12 h-12 text-green-600" />
                 </div>
-                <button className="absolute bottom-0 right-0 p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition-colors duration-200">
+                <button className="absolute bottom-0 right-0 p-2 bg-green-600 rounded-full text-white hover:bg-green-700 transition-colors duration-200">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
               
               <h2 className="text-xl font-bold text-gray-900 mt-4">{profileData.name}</h2>
-              <p className="text-gray-600">{profileData.position}</p>
               <p className="text-sm text-gray-500">{profileData.department}</p>
               
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <p className="text-2xl font-bold text-blue-600">{profileData.experience}</p>
+                    <p className="text-2xl font-bold text-green-600">{profileData.experience}</p>
                     <p className="text-xs text-gray-600">Experience</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-green-600">{profileData.employeeId}</p>
+                    <p className="text-2xl font-bold text-blue-600">{profileData.employeeId}</p>
                     <p className="text-xs text-gray-600">Employee ID</p>
                   </div>
                 </div>
@@ -117,9 +166,15 @@ const Profile: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Profile Information</h3>
               <button
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                disabled={loading}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition-colors duration-200"
               >
-                {isEditing ? (
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Saving...</span>
+                  </>
+                ) : isEditing ? (
                   <>
                     <Save className="w-4 h-4" />
                     <span>Save Changes</span>
@@ -151,7 +206,7 @@ const Profile: React.FC = () => {
                         name="name"
                         value={profileData.name}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     ) : (
                       <div className="flex items-center space-x-2">
@@ -171,7 +226,7 @@ const Profile: React.FC = () => {
                         name="email"
                         value={profileData.email}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     ) : (
                       <div className="flex items-center space-x-2">
@@ -191,7 +246,7 @@ const Profile: React.FC = () => {
                         name="phone"
                         value={profileData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     ) : (
                       <div className="flex items-center space-x-2">
@@ -211,7 +266,7 @@ const Profile: React.FC = () => {
                         value={profileData.address}
                         onChange={handleInputChange}
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                       />
                     ) : (
                       <div className="flex items-center space-x-2">
@@ -248,7 +303,7 @@ const Profile: React.FC = () => {
                         name="department"
                         value={profileData.department}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     ) : (
                       <span className="text-gray-900">{profileData.department}</span>
@@ -257,18 +312,18 @@ const Profile: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Position
+                      Medical License
                     </label>
                     {isEditing ? (
                       <input
                         type="text"
-                        name="position"
-                        value={profileData.position}
+                        name="licenseNumber"
+                        value={profileData.licenseNumber}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     ) : (
-                      <span className="text-gray-900">{profileData.position}</span>
+                      <span className="text-gray-900">{profileData.licenseNumber}</span>
                     )}
                   </div>
 
@@ -292,7 +347,7 @@ const Profile: React.FC = () => {
                         value={profileData.qualification}
                         onChange={handleInputChange}
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                       />
                     ) : (
                       <div className="flex items-center space-x-2">
@@ -311,4 +366,4 @@ const Profile: React.FC = () => {
   );
 };
 
-export default Profile;
+export default DoctorProfile;

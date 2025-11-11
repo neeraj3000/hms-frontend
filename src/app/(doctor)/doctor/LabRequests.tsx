@@ -24,7 +24,7 @@ type LabRequest = {
   prescription?: {
     student_id: string;
     student_name: string;
-    notes: string;
+    doctor_notes: string;
   };
   patientName?: string;
   studentId?: string;
@@ -93,7 +93,7 @@ const LabRequests: React.FC = () => {
           prescription: {
             student_id: 'R200142',
             student_name: 'Priya Sharma',
-            notes: 'Patient complains of stomach pain. Ordered lab tests to rule out infection.'
+            doctor_notes: 'Patient complains of stomach pain. Ordered lab tests to rule out infection.'
           }
         },
         {
@@ -107,7 +107,7 @@ const LabRequests: React.FC = () => {
           prescription: {
             student_id: 'R200180',
             student_name: 'Vikram Reddy',
-            notes: 'Patient reports feeling weak for past week. Check for diabetes.'
+            doctor_notes: 'Patient reports feeling weak for past week. Check for diabetes.'
           }
         },
         {
@@ -378,8 +378,8 @@ const LabRequests: React.FC = () => {
                         )}
 
                         <div>
-                          <h5 className="text-sm font-medium text-gray-700">Prescription Notes</h5>
-                          <p className="text-sm text-gray-600">{request.prescription?.notes}</p>
+                          <h5 className="text-sm font-medium text-gray-700">Prescription Notes:</h5>
+                          <p className="text-sm text-gray-600">{request.prescription?.doctor_notes}</p>
                         </div>
                       </div>
                     </div>

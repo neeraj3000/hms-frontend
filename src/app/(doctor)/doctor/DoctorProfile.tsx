@@ -13,23 +13,25 @@ import {
   Clock,
   Stethoscope
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 const DoctorProfile: React.FC = () => {
+  const { data: session } = useSession();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: 'Dr. Sarah Wilson',
-    email: 'sarah.wilson@medicarehosp.com',
-    phone: '+91 9876543210',
-    employeeId: 'DOC001',
-    department: 'General Medicine',
-    specialization: 'Internal Medicine',
-    qualification: 'MBBS, MD (Internal Medicine)',
-    experience: '12 years',
-    joinDate: '2018-06-15',
-    address: 'Rajam, Andhra Pradesh, India',
-    licenseNumber: 'MCI-12345',
-    consultationHours: '9:00 AM - 5:00 PM'
+    name: "",
+    email: "",
+    phone: "",
+    employeeId: "",
+    department: "",
+    position: "",
+    qualification: "",
+    experience: "",
+    joinDate: "",
+    address: "",
+    licenseNumber: "",
   });
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -39,17 +41,18 @@ const DoctorProfile: React.FC = () => {
   const fetchProfileData = async () => {
     try {
       // Sample API call - replace with your endpoint
-      const response = await fetch('/api/doctor/profile', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/staff-profiles/${session?.user?.id}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
         const data = await response.json();
-        setProfileData(data.profile);
+        console.log("Fetched profile data:", data);
+        setProfileData(data);
       }
     } catch (error) {
       console.error('Error fetching profile data:', error);
@@ -69,10 +72,10 @@ const DoctorProfile: React.FC = () => {
     setLoading(true);
     try {
       // Sample API call - replace with your endpoint
-      const response = await fetch('/api/doctor/profile', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/staff-profiles/${session?.user?.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(profileData),
@@ -113,7 +116,6 @@ const DoctorProfile: React.FC = () => {
               </div>
               
               <h2 className="text-xl font-bold text-gray-900 mt-4">{profileData.name}</h2>
-              <p className="text-gray-600">{profileData.specialization}</p>
               <p className="text-sm text-gray-500">{profileData.department}</p>
               
               <div className="mt-6 pt-6 border-t border-gray-200">
@@ -310,23 +312,6 @@ const DoctorProfile: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Specialization
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="specialization"
-                        value={profileData.specialization}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <span className="text-gray-900">{profileData.specialization}</span>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Medical License
                     </label>
                     {isEditing ? (
@@ -350,26 +335,6 @@ const DoctorProfile: React.FC = () => {
                       <Calendar className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-900">{profileData.joinDate}</span>
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Consultation Hours
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="consultationHours"
-                        value={profileData.consultationHours}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-900">{profileData.consultationHours}</span>
-                      </div>
-                    )}
                   </div>
 
                   <div>

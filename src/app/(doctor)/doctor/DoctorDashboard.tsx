@@ -6,6 +6,7 @@ import PatientDetails from './PatientDetails';
 import PrescriptionHistory from './PrescriptionHistory';
 import LabRequests from './LabRequests';
 import DoctorProfile from './DoctorProfile';
+import Profile from '@/components/Profile';
 
 const DoctorDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('queue');
@@ -24,7 +25,7 @@ const DoctorDashboard: React.FC = () => {
       case 'lab-requests':
         return <LabRequests />;
       case 'profile':
-        return <DoctorProfile />;
+        return <Profile color="green" />;
       default:
         return <DoctorOverview setActiveTab={setActiveTab} />;
     }

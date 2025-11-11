@@ -4,7 +4,7 @@ import DashboardOverview from './DashboardOverview';
 import PatientRegistration from './PatientRegistration';
 import PatientSearch from './PatientSearch';
 import RecentPrescriptions from './RecentPrescriptions';
-import Profile from './Profile';
+import Profile from "@/components/Profile"
 
 const NurseDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('register');
@@ -20,7 +20,7 @@ const NurseDashboard: React.FC = () => {
       case 'prescriptions':
         return <RecentPrescriptions />;
       case 'profile':
-        return <Profile />;
+        return <Profile color="blue"/>;
       default:
         return <DashboardOverview />;
     }

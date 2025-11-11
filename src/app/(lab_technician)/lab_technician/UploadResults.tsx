@@ -112,56 +112,56 @@ const UploadResults: React.FC<UploadResultsProps> = ({ labReportId, onUploadComp
   };
 
   const handleUploadResults = async () => {
-    // if (!resultFile) {
-    //   alert('Please select a file to upload');
-    //   return;
-    // }
-
     setUploading(true);
+
     try {
       // Create FormData for file upload
       const formData = new FormData();
+
+      // Optional file upload
       if (resultFile) {
-        formData.append('file', resultFile);
+        formData.append("file", resultFile);
       }
-      formData.append('notes', resultNotes);
-      const payload = {
-        status: 'Lab Test Completed',
-        result: resultNotes
+
+      // Notes or result text
+      if (resultNotes) {
+        formData.append("result", resultNotes);
       }
+
+      // Status update
+      formData.append("status", "Lab Test Completed");
 
       // Upload file and update lab report
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports/${labReportId}`, {
-        method: 'PUT',
-        headers: {  
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports/${labReportId}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
 
-      
-
-      if (response.ok) {
-        const data = await response.json();
-        setShowSuccess(true);
-        setTimeout(() => {
-          setShowSuccess(false);
-          // Redirect back to queue
-          if (onUploadComplete) onUploadComplete();
-        }, 3000);
+      if (!response.ok) {
+        throw new Error("Failed to upload results");
       }
-    } catch (error) {
-      console.error('Error uploading results:', error);
-      // For demo, show success
+
+      const data = await response.json();
+      console.log("Lab report updated successfully:", data);
+
+      // ✅ Show success message
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
+        // Redirect back to queue or parent refresh
+        if (onUploadComplete) onUploadComplete();
       }, 3000);
+    } catch (error) {
+      console.error("Error uploading results:", error);
+      alert("Failed to upload results. Please try again.");
     } finally {
       setUploading(false);
     }
   };
+
 
   if (!labReportId) {
     return (

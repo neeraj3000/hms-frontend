@@ -43,10 +43,10 @@ const LabTechnicianOverview: React.FC<LabTechnicianOverviewProps> = ({ setActive
   const fetchDashboardData = async () => {
     try {
       // Fetch lab technician dashboard statistics
-      const statsResponse = await fetch('/api/lab-technician/dashboard/stats', {
+      const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-tech-stats`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json',
         },
       });
@@ -60,11 +60,13 @@ const LabTechnicianOverview: React.FC<LabTechnicianOverviewProps> = ({ setActive
         },
       });
 
-      if (statsResponse.ok && testsResponse.ok) {
+      if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        const testsData = await testsResponse.json();
-        
         setStats(statsData);
+      }
+
+      if(testsResponse.ok){
+        const testsData = await testsResponse.json();
         setRecentTests(testsData.tests);
       }
     } catch (error) {
@@ -115,19 +117,19 @@ const LabTechnicianOverview: React.FC<LabTechnicianOverviewProps> = ({ setActive
       onClick: () => setActiveTab('queue')
     },
     {
-      title: 'Completed Today',
-      value: stats.completedToday.toString(),
-      change: '+25%',
-      icon: CheckCircle,
-      color: 'green',
-      onClick: () => setActiveTab('queue')
-    },
-    {
       title: 'Urgent Tests',
       value: stats.urgentTests.toString(),
       change: 'Need attention',
       icon: AlertTriangle,
       color: 'red',
+      onClick: () => setActiveTab('queue')
+    },
+    {
+      title: 'Completed Today',
+      value: stats.completedToday.toString(),
+      change: '+25%',
+      icon: CheckCircle,
+      color: 'green',
       onClick: () => setActiveTab('queue')
     },
     {

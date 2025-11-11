@@ -59,7 +59,7 @@ const PharmacistProfile: React.FC = () => {
       const response = await fetch('/api/pharmacist/profile', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(profileData),

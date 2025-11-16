@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   TestTube, 
   Search, 
@@ -15,37 +15,38 @@ import PrescriptionDetailsModal from '@/components/PrescriptionDetailsModal';
 
 type LabRequest = {
   id: string | number;
-  prescription_id?: number;
   test_name?: string;
   status: string;
   result?: string | null;
   created_at: string;
   updated_at?: string | null;
   prescription?: {
+    id: number;
     student_id: string;
     student_name: string;
     doctor_notes: string;
   };
-  patientName?: string;
-  studentId?: string;
-  requestDate?: string;
-  requestTime?: string;
-  completedDate?: string | null;
-  completedTime?: string | null;
-  tests?: string[];
-  results?: any[];
-  diagnosis?: string;
-  doctorNotes?: string;
-  priority?: string;
+  student?: {
+    name: string;
+    id_number: string;
+  };
 };
+
+const LIMIT = 10;
 
 const LabRequests: React.FC = () => {
   const [labRequests, setLabRequests] = useState<LabRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<LabRequest[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [typingTimeout, setTypingTimeout] = useState<any>(null);
+
+  const loaderRef = useRef<HTMLDivElement | null>(null);
+
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -54,123 +55,94 @@ const LabRequests: React.FC = () => {
     setShowModal(true);
   };
 
-  useEffect(() => {
-    fetchLabRequests();
-  }, []);
-
-  useEffect(() => {
-    filterRequests();
-  }, [labRequests, searchTerm, filterStatus, filterDate]);
-
-  const fetchLabRequests = async () => {
+  // ====================================================
+  // FETCH API (PAGINATED)
+  // ====================================================
+  const fetchLabRequests = async (reset = false) => {
     try {
-      // Fetch lab reports for the doctor
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports`, {
-        method: 'GET',
-        headers: {
-          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setLabRequests(data);
-        console.log("Lab requests: ", data)
+      if (reset) {
+        setPage(1);
+        setLabRequests([]);
       }
-    } catch (error) {
-      console.error('Error fetching lab requests:', error);
-      // Sample data for demo
-      const sampleRequests = [
-        {
-          id: 1,
-          prescription_id: 2,
-          test_name: 'Complete Blood Count',
-          status: 'Lab Test Completed',
-          result: 'reports/cbc_report.pdf',
-          created_at: '2024-01-15T11:15:00Z',
-          updated_at: '2024-01-16T14:30:00Z',
-          prescription: {
-            student_id: 'R200142',
-            student_name: 'Priya Sharma',
-            doctor_notes: 'Patient complains of stomach pain. Ordered lab tests to rule out infection.'
-          }
-        },
-        {
-          id: 2,
-          prescription_id: 3,
-          test_name: 'Blood Sugar Test',
-          status: 'Lab Test Requested',
-          result: null,
-          created_at: '2024-01-16T09:15:00Z',
-          updated_at: null,
-          prescription: {
-            student_id: 'R200180',
-            student_name: 'Vikram Reddy',
-            doctor_notes: 'Patient reports feeling weak for past week. Check for diabetes.'
-          }
-        },
-        {
-          id: 'LAB-003',
-          patientName: 'Anita Patel',
-          studentId: 'R200195',
-          requestDate: '2024-01-16',
-          requestTime: '10:45 AM',
-          status: 'Pending',
-          completedDate: null,
-          completedTime: null,
-          tests: ['Urine Analysis', 'Kidney Function Test'],
-          results: [],
-          diagnosis: 'Urinary tract infection suspected',
-          doctorNotes: 'Patient has burning sensation during urination. UTI suspected.',
-          priority: 'medium',
-          created_at: '2024-01-16T10:45:00Z'
-        }
-      ];
-      setLabRequests(sampleRequests);
-    } finally {
+
+      setLoading(true);
+
+      const url = new URL(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports`);
+
+      url.searchParams.append("page", reset ? "1" : page.toString());
+      url.searchParams.append("limit", LIMIT.toString());
+      if (searchTerm) url.searchParams.append("search", searchTerm);
+      if (filterStatus !== "all") url.searchParams.append("status", filterStatus);
+      if (filterDate) url.searchParams.append("date", filterDate);
+
+      const res = await fetch(url.toString());
+      const data = await res.json();
+
+      if (reset) {
+        setLabRequests(data.data || []);
+      } else {
+        setLabRequests((prev) => [...prev, ...(data.data || [])]);
+      }
+
+      setHasMore(data.has_more);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching lab requests:", err);
       setLoading(false);
     }
   };
 
-  const filterRequests = () => {
-    if (!Array.isArray(labRequests)) {
-      setFilteredRequests([]);
-      return;
-    }
+  // ====================================================
+  // INITIAL FETCH
+  // ====================================================
+  useEffect(() => {
+    fetchLabRequests(true);
+  }, []);
 
-    const search = (searchTerm || "").toLowerCase();
+  // ====================================================
+  // FILTERS → RESET + REFETCH
+  // ====================================================
+  useEffect(() => {
+    if (typingTimeout) clearTimeout(typingTimeout);
 
-    const filtered = labRequests.filter((request: any) => {
-      const studentName = request?.prescription?.student_name?.toString().toLowerCase() || "";
-      const studentId = request?.prescription?.student_id?.toString().toLowerCase() || "";
-      const reqId = request?.id?.toString().toLowerCase() || "";
+    const timeout = setTimeout(() => {
+      fetchLabRequests(true);
+    }, 500);
 
-      const matchesSearch =
-        studentName.includes(search) ||
-        studentId.includes(search) ||
-        reqId.includes(search);
+    setTypingTimeout(timeout);
+  }, [searchTerm, filterStatus, filterDate]);
 
-      const matchesStatus =
-        filterStatus === "all" ||
-        (request?.status || "").toString().toLowerCase() === filterStatus.toLowerCase();
+  // ====================================================
+  // INFINITE SCROLL OBSERVER
+  // ====================================================
+  const loadMore = useCallback(() => {
+    if (!hasMore || loading) return;
+    setPage((p) => p + 1);
+  }, [hasMore, loading]);
 
-      const matchesDate =
-        !filterDate || (request?.created_at?.split?.("T")[0] === filterDate);
+  useEffect(() => {
+    if (page === 1) return;
+    fetchLabRequests(false);
+  }, [page]);
 
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-
-    // Sort by date (newest first). fallback to 0 if missing
-    filtered.sort(
-      (a: any, b: any) =>
-        new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime()
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { threshold: 1 }
     );
 
-    setFilteredRequests(filtered);
-  };
+    if (loaderRef.current) observer.observe(loaderRef.current);
 
+    return () => {
+      if (loaderRef.current) observer.unobserve(loaderRef.current);
+    };
+  }, [loaderRef.current, loadMore]);
 
+  // ====================================================
+  // UI COLOR HELPERS
+  // ====================================================
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'lab test completed':
@@ -195,29 +167,21 @@ const LabRequests: React.FC = () => {
 
   const downloadReport = async (requestId: string, fileName: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports/${requestId}/download`, {
-        method: 'GET',
-        // headers: {
-        //   'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        // },
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports/${requestId}/download`);
+      if (res.ok) {
+        const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
         a.download = fileName;
-        document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
       }
-    } catch (error) {
-      console.error('Error downloading report:', error);
-      alert('Download functionality will be implemented with backend integration');
+    } catch (err) {
+      console.log("Download error", err);
     }
   };
+
 
   if (loading) {
     return (
@@ -286,9 +250,8 @@ const LabRequests: React.FC = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
                 >
                   <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="in progress">In Progress</option>
-                  <option value="completed">Completed</option>
+                  <option value="Lab Test Requested">Lab Test Requested</option>
+                  <option value="Lab Test Completed">Lab Test Completed</option>
                 </select>
               </div>
             </div>
@@ -316,18 +279,18 @@ const LabRequests: React.FC = () => {
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
-              Lab Requests ({filteredRequests.length})
+              Lab Requests ({labRequests.length})
             </h3>
           </div>
 
-          {filteredRequests.length === 0 ? (
+          {labRequests.length === 0 ? (
             <div className="text-center py-8">
               <TestTube className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">No lab requests found matching your criteria</p>
             </div>
           ) : (
             <div className="space-y-6">
-              {filteredRequests.map((request: any, index) => (
+              {labRequests.map((request: any, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors duration-200">
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     {/* Patient Info */}
@@ -337,8 +300,8 @@ const LabRequests: React.FC = () => {
                           <User className="w-6 h-6 text-purple-600" />
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900">{request.prescription?.student.name}</h4>
-                          <p className="text-sm text-gray-600">ID: {request.prescription?.student.id_number}</p>
+                          <h4 className="font-semibold text-gray-900">{request.student?.name}</h4>
+                          <p className="text-sm text-gray-600">ID: {request.student?.id_number}</p>
                           <p className="text-xs text-gray-500">LAB: {request.id}</p>
                         </div>
                       </div>
@@ -421,11 +384,17 @@ const LabRequests: React.FC = () => {
           )}
         </div>
       </div>
+      {/* Infinite Scroll Loader */}
+      <div ref={loaderRef} className="h-10 flex justify-center items-center">
+        {hasMore && !loading && <p className="text-gray-500">Loading more...</p>}
+      </div>
+
       <PrescriptionDetailsModal
         prescriptionId={selectedPrescriptionId}
         isOpen={showModal}
         onClose={() => setShowModal(false)}
       />
+
     </div>
   );
 };

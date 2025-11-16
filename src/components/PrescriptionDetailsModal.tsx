@@ -61,6 +61,7 @@ interface Prescription {
   lab_reports?: LabReport[];
   nurse_notes?: string;
   doctor_notes?: string;
+  ai_summary?: string;
   nurse_image_url?: string;
   doctor_image_url?: string;
   audio_url?: string;
@@ -464,6 +465,26 @@ const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
                     </p>
                   )}
                 </div>
+
+                {/* AI Summary (if present) */}
+                {prescription?.ai_summary && (
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-indigo-600" />
+                      AI-Generated Summary
+                    </h3>
+
+                    <div className="bg-white p-4 rounded-lg border">
+                      <p className="text-gray-900 whitespace-pre-line leading-relaxed">
+                        {prescription.ai_summary}
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-2">
+                      Automatically generated from doctor audio
+                    </p>
+                  </div>
+                )}
 
                 {/* Prescribed Medicines */}
                 {prescription?.medicines &&

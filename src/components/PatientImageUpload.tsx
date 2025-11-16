@@ -112,8 +112,6 @@ const PatientImageUpload: React.FC<PatientImageUploadProps> = ({
 
           <p className="text-sm text-gray-500">
             Upload a patient photo or use the document scanner. Max: 5MB. Supported: JPG / PNG / GIF.
-            <br />
-            <span className="text-blue-600 font-medium">Note:</span> Scanner works on laptops & mobiles with edge detection and perspective correction.
           </p>
         </div>
       </div>

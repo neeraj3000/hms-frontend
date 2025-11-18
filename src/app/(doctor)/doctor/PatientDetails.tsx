@@ -1,5 +1,5 @@
 import PatientAudioUpload from "@/components/PatientAudioUpload";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import PatientImageUpload from "@/components/PatientImageUpload";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import {
@@ -57,33 +57,23 @@ interface Medicine {
 interface SelectedMedicine {
   medicineId: number | "";
   quantity: number;
+  searchText?: string;
+  selectedText?: string;
+  suggestions?: Medicine[];
 }
 
 const PatientDetails: React.FC<PatientDetailsProps> = ({
   prescriptionId,
   setActiveTab,
 }) => {
-  // Doctor audio upload state
+  // State management
   const [doctorAudioUrl, setDoctorAudioUrl] = useState<string | null>(null);
-  // Audio upload handlers
-  const handleAudioUpload = (url: string) => {
-    setDoctorAudioUrl(url);
-  };
-  const handleAudioRemove = () => {
-    setDoctorAudioUrl(null);
-  };
   const [prescription, setPrescription] = useState<PrescriptionType | null>(
     null
   );
   const [student, setStudent] = useState<StudentType | null>(null);
-  const { data: session, status } = useSession();
-  interface Medicine {
-    id: number;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-  }
+  const { data: session } = useSession();
+
   const [availableMedicines, setAvailableMedicines] = useState<Medicine[]>([]);
   const [selectedMedicines, setSelectedMedicines] = useState<
     SelectedMedicine[]
@@ -93,7 +83,8 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  // Doctor image upload state
+  const [error, setError] = useState<string | null>(null);
+
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [doctorImageUrl, setDoctorImageUrl] = useState<string | null>(null);
@@ -103,240 +94,354 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
   const [aiSummary, setAiSummary] = useState<string>("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
 
-  // Handle image select/remove
-  const handleImageSelect = (file: File, preview: string) => {
+  const searchTimeouts = useRef<Record<number, NodeJS.Timeout>>({});
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<
+    number | null
+  >(null);
+  const isMountedRef = useRef(true);
+
+  // Audio handlers
+  const handleAudioUpload = useCallback((url: string) => {
+    setDoctorAudioUrl(url);
+  }, []);
+
+  const handleAudioRemove = useCallback(() => {
+    setDoctorAudioUrl(null);
+  }, []);
+
+  // Image handlers
+  const handleImageSelect = useCallback((file: File, preview: string) => {
     setSelectedImage(file);
     setImagePreview(preview);
-  };
+  }, []);
 
-  const handleImageRemove = () => {
+  const handleImageRemove = useCallback(() => {
     setSelectedImage(null);
     setImagePreview(null);
     setDoctorImageUrl(null);
-  };
+  }, []);
 
-  // Upload image to Cloudinary and set URL
   const handleImageUpload = async () => {
     if (!selectedImage) return;
     setImageUploading(true);
+    setError(null);
+
     try {
       const url = await uploadImageToCloudinary(selectedImage);
-      setDoctorImageUrl(url);
-      setSelectedImage(null);
-      setImagePreview(null);
+      if (isMountedRef.current) {
+        setDoctorImageUrl(url);
+        setSelectedImage(null);
+        setImagePreview(null);
+      }
     } catch (err) {
-      alert("Image upload failed.");
+      if (isMountedRef.current) {
+        setError("Image upload failed. Please try again.");
+      }
     } finally {
-      setImageUploading(false);
+      if (isMountedRef.current) {
+        setImageUploading(false);
+      }
     }
   };
 
-  useEffect(() => {
-    if (prescriptionId) {
-      fetchPrescriptionDetails();
-      fetchAvailableMedicines();
-    }
-  }, [prescriptionId]);
+  const fetchPrescriptionDetails = useCallback(async () => {
+    if (!prescriptionId) return;
 
-  const fetchPrescriptionDetails = async () => {
     try {
-      // Fetch prescription details
       const prescriptionResponse = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions/${prescriptionId}`,
         {
           method: "GET",
           headers: {
-            // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             "Content-Type": "application/json",
           },
         }
       );
 
-      if (prescriptionResponse.ok) {
-        const prescriptionData = await prescriptionResponse.json();
-        console.log("Fetched prescription:", prescriptionData);
-        setPrescription(prescriptionData as PrescriptionType);
-        setDoctorNotes(prescriptionData.notes || "");
+      if (!prescriptionResponse.ok) {
+        throw new Error("Failed to fetch prescription details");
+      }
 
-        // Fetch student details using student_id
+      const prescriptionData = await prescriptionResponse.json();
+
+      if (!isMountedRef.current) return;
+
+      setPrescription(prescriptionData as PrescriptionType);
+      setDoctorNotes(prescriptionData.notes || "");
+
+      // Fetch student details
+      if (prescriptionData.student_id) {
         const studentResponse = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/students/${prescriptionData.student_id}`,
           {
             method: "GET",
             headers: {
-              // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
               "Content-Type": "application/json",
             },
           }
         );
 
-        if (studentResponse.ok) {
+        if (studentResponse.ok && isMountedRef.current) {
           const studentData = await studentResponse.json();
           setStudent(studentData as StudentType);
         }
       }
     } catch (error) {
       console.error("Error fetching prescription details:", error);
-      // Sample data for demo
-      setPrescription({
-        id: 1,
-        student_id: "R200137",
-        status: "Initiated by Nurse",
-        notes:
-          "Patient appears very unwell, high fever, complaining of severe headache.",
-        temperature: "102.1°F",
-        bp: "140/90",
-        weight: "68kg",
-        created_at: "2024-01-15T10:30:00Z",
-      });
-      setStudent({
-        id: 1,
-        student_id: "R200137",
-        name: "Rajesh Kumar",
-        email: "r200137@rgukitrkv.ac.in",
-        branch: "CSE",
-        section: "A",
-      });
+      if (isMountedRef.current) {
+        setError("Failed to load prescription details");
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [prescriptionId]);
 
-  const fetchAvailableMedicines = async () => {
+  const fetchAvailableMedicines = useCallback(async () => {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/medicines`,
         {
           method: "GET",
           headers: {
-            // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             "Content-Type": "application/json",
           },
         }
       );
 
-      if (response.ok) {
+      if (response.ok && isMountedRef.current) {
         const data = await response.json();
-        console.log("Fetched medicines:", data);
         setAvailableMedicines(data as Medicine[]);
       }
     } catch (error) {
       console.error("Error fetching medicines:", error);
-      // Sample data for demo
-      setAvailableMedicines([
+    }
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    if (prescriptionId) {
+      fetchPrescriptionDetails();
+      fetchAvailableMedicines();
+    }
+
+    return () => {
+      isMountedRef.current = false;
+      Object.values(searchTimeouts.current).forEach((timeout) =>
+        clearTimeout(timeout)
+      );
+    };
+  }, [prescriptionId, fetchPrescriptionDetails, fetchAvailableMedicines]);
+
+  const addMedicine = useCallback(() => {
+    setSelectedMedicines((prev) => [
+      ...prev,
+      {
+        medicineId: "",
+        quantity: 1,
+        searchText: "",
+        selectedText: "",
+        suggestions: [],
+      },
+    ]);
+  }, []);
+
+  const updateMedicine = useCallback(
+    (
+      index: number,
+      field:
+        | "medicineId"
+        | "quantity"
+        | "searchText"
+        | "selectedText"
+        | "suggestions",
+      value: any
+    ) => {
+      setSelectedMedicines((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], [field]: value };
+        return updated;
+      });
+    },
+    []
+  );
+
+  const removeMedicine = useCallback((index: number) => {
+    if (searchTimeouts.current[index]) {
+      clearTimeout(searchTimeouts.current[index]);
+      delete searchTimeouts.current[index];
+    }
+    setSelectedMedicines((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const addLabTest = useCallback(() => {
+    setLabTests((prev) => [...prev, ""]);
+  }, []);
+
+  const updateLabTest = useCallback((index: number, value: string) => {
+    setLabTests((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  }, []);
+
+  const removeLabTest = useCallback((index: number) => {
+    setLabTests((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleSearchChange = useCallback(
+    (index: number, text: string) => {
+      updateMedicine(index, "searchText", text);
+      updateMedicine(index, "suggestions", []);
+
+      if (searchTimeouts.current[index]) {
+        clearTimeout(searchTimeouts.current[index]);
+      }
+
+      if (!text || text.length < 2) {
+        return;
+      }
+
+      searchTimeouts.current[index] = setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `${
+              process.env.NEXT_PUBLIC_BACKEND_URL
+            }/medicines?search=${encodeURIComponent(text)}`
+          );
+
+          if (res.ok && isMountedRef.current) {
+            const data = await res.json();
+            updateMedicine(index, "suggestions", data as Medicine[]);
+          }
+        } catch (err) {
+          const local = availableMedicines.filter((m) =>
+            m.name.toLowerCase().includes(text.toLowerCase())
+          );
+          if (isMountedRef.current) {
+            updateMedicine(index, "suggestions", local);
+          }
+        }
+      }, 300);
+    },
+    [availableMedicines, updateMedicine]
+  );
+
+  const handleSelectMedicine = useCallback(
+    (index: number, med: Medicine) => {
+      const selectedLabel = `${med.name} (Stock: ${med.quantity})`;
+      updateMedicine(index, "medicineId", med.id);
+      updateMedicine(index, "selectedText", selectedLabel);
+      updateMedicine(index, "searchText", selectedLabel);
+      updateMedicine(index, "suggestions", []);
+      setActiveSuggestionIndex(null);
+    },
+    [updateMedicine]
+  );
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    setActiveSuggestionIndex(null);
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [handleClickOutside]);
+
+  const handleGenerateSummary = async () => {
+    if (!audioBlob) return;
+
+    setGeneratingSummary(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", audioBlob, "doctor_audio.webm");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/transcribe-summarize`,
         {
-          id: 1,
-          name: "Paracetamol 500mg",
-          category: "Analgesic",
-          quantity: 150,
-          unit: "tablets",
-        },
-        {
-          id: 2,
-          name: "Ibuprofen 400mg",
-          category: "Anti-inflammatory",
-          quantity: 80,
-          unit: "tablets",
-        },
-        {
-          id: 3,
-          name: "Amoxicillin 250mg",
-          category: "Antibiotic",
-          quantity: 60,
-          unit: "capsules",
-        },
-        {
-          id: 4,
-          name: "Cetirizine 10mg",
-          category: "Antihistamine",
-          quantity: 120,
-          unit: "tablets",
-        },
-        {
-          id: 5,
-          name: "Omeprazole 20mg",
-          category: "Antacid",
-          quantity: 90,
-          unit: "capsules",
-        },
-      ]);
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to generate summary");
+      }
+
+      const data = await res.json();
+
+      if (isMountedRef.current) {
+        if (data.summary) {
+          setAiSummary(data.summary);
+        } else {
+          setError("Failed to generate summary. Please try again.");
+        }
+      }
+    } catch (err) {
+      if (isMountedRef.current) {
+        setError("Failed to generate summary. Please try again.");
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setGeneratingSummary(false);
+      }
     }
   };
 
-  const addMedicine = () => {
-    setSelectedMedicines([
-      ...selectedMedicines,
-      { medicineId: "", quantity: 1 },
-    ]);
-  };
-
-  const updateMedicine = (
-    index: number,
-    field: "medicineId" | "quantity",
-    value: number | ""
-  ) => {
-    const updated = [...selectedMedicines];
-    const current = { ...updated[index] } as SelectedMedicine;
-    if (field === "medicineId") current.medicineId = value as number | "";
-    if (field === "quantity") current.quantity = value as number;
-    updated[index] = current;
-    setSelectedMedicines(updated);
-  };
-
-  const removeMedicine = (index: number) => {
-    setSelectedMedicines(selectedMedicines.filter((_, i) => i !== index));
-  };
-
-  const addLabTest = () => {
-    setLabTests([...labTests, ""]);
-  };
-
-  const updateLabTest = (index: number, value: string) => {
-    const updated = [...labTests];
-    updated[index] = value;
-    setLabTests(updated);
-  };
-
-  const removeLabTest = (index: number) => {
-    setLabTests(labTests.filter((_, i) => i !== index));
-  };
-
   const handleSavePrescription = async () => {
-    console.log("🔹 handleSavePrescription called");
     setSaving(true);
+    setError(null);
 
     try {
       const doctorId = session?.user?.id;
-      let status = "Initiated by Nurse";
 
-      if (selectedMedicines.length > 0 && labTests.length > 0) {
+      if (!doctorId) {
+        throw new Error("Doctor ID not found");
+      }
+
+      // Determine status
+      let status = "Initiated by Nurse";
+      const hasMedicines = selectedMedicines.some(
+        (med) => med.medicineId && med.quantity > 0
+      );
+      const hasLabTests = labTests.some((test) => test.trim() !== "");
+
+      if (hasMedicines && hasLabTests) {
         status = "Medication Prescribed and Lab Test Requested";
-      } else if (selectedMedicines.length > 0) {
+      } else if (hasMedicines) {
         status = "Medication Prescribed by Doctor";
-      } else if (labTests.length > 0) {
+      } else if (hasLabTests) {
         status = "Lab Test Requested";
       }
 
-      // If image selected but not uploaded, upload it first
+      // Upload image if needed
       let imageUrl = doctorImageUrl;
       if (selectedImage && !doctorImageUrl) {
         try {
           imageUrl = await uploadImageToCloudinary(selectedImage);
-          setDoctorImageUrl(imageUrl);
+          if (isMountedRef.current) {
+            setDoctorImageUrl(imageUrl);
+          }
         } catch {
-          alert("Image upload failed.");
+          throw new Error("Image upload failed");
         }
       }
 
-      // Prepare form data (includes optional audio)
+      // Prepare form data
       const formData = new FormData();
-      formData.append("doctor_id", String(doctorId || ""));
+      formData.append("doctor_id", String(doctorId));
       formData.append("doctor_notes", doctorNotes || "");
       formData.append("ai_summary", aiSummary || "");
       formData.append("status", status);
       if (imageUrl) formData.append("doctor_image_url", imageUrl);
       if (audioBlob) formData.append("file", audioBlob, "doctor_audio.webm");
 
+      // Update prescription
       const updateResponse = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions/${prescriptionId}/update-with-audio`,
         {
@@ -345,51 +450,64 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
         }
       );
 
-      if (updateResponse.ok) {
-        console.log("🎉 Prescription successfully updated!");
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
-        setActiveTab("queue");
-      } else {
-        console.error(
-          "❌ Prescription update failed:",
-          await updateResponse.text()
-        );
+      if (!updateResponse.ok) {
+        throw new Error("Failed to update prescription");
       }
 
-      // ✅ Handle medicines
-      for (const med of selectedMedicines.filter(
-        (m) => m.medicineId && m.quantity > 0
-      )) {
-        await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescription-medicines`,
-          {
+      // Save medicines
+      const medicinePromises = selectedMedicines
+        .filter((m) => m.medicineId && m.quantity > 0)
+        .map((med) =>
+          fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescription-medicines`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                prescription_id: parseInt(prescriptionId!),
+                medicine_id: med.medicineId,
+                quantity_prescribed: med.quantity,
+              }),
+            }
+          )
+        );
+
+      // Save lab tests
+      const labTestPromises = labTests
+        .filter((t) => t.trim() !== "")
+        .map((test) =>
+          fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               prescription_id: parseInt(prescriptionId!),
-              medicine_id: med.medicineId,
-              quantity_prescribed: med.quantity,
+              test_name: test,
             }),
-          }
+          })
         );
-      }
 
-      // ✅ Handle lab tests
-      for (const test of labTests.filter((t) => t.trim() !== "")) {
-        await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lab-reports`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prescription_id: parseInt(prescriptionId!),
-            test_name: test,
-          }),
-        });
+      await Promise.all([...medicinePromises, ...labTestPromises]);
+
+      if (isMountedRef.current) {
+        setShowSuccess(true);
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setShowSuccess(false);
+            setActiveTab("queue");
+          }
+        }, 3000);
       }
     } catch (err) {
-      console.error("🚨 Error saving prescription:", err);
+      console.error("Error saving prescription:", err);
+      if (isMountedRef.current) {
+        setError(
+          err instanceof Error ? err.message : "Failed to save prescription"
+        );
+      }
     } finally {
-      setSaving(false);
+      if (isMountedRef.current) {
+        setSaving(false);
+      }
     }
   };
 
@@ -454,9 +572,20 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+          <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-red-800">Error</h3>
+            <p className="text-sm text-red-700 mt-1">{error}</p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => setActiveTab("queue")}
           className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -487,19 +616,21 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
                   <label className="block text-sm font-medium text-gray-700">
                     Name
                   </label>
-                  <p className="text-gray-900 font-medium">{student?.name}</p>
+                  <p className="text-gray-900 font-medium">
+                    {student?.name || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Student ID
                   </label>
-                  <p className="text-gray-900">{student?.id_number}</p>
+                  <p className="text-gray-900">{student?.id_number || "N/A"}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Branch
                   </label>
-                  <p className="text-gray-900">{student?.branch || "CS"}</p>
+                  <p className="text-gray-900">{student?.branch || "N/A"}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
@@ -623,40 +754,62 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
                   {selectedMedicines.map((medicine, index) => (
                     <div
                       key={index}
-                      className="border border-gray-200 rounded-lg p-4"
+                      className="border border-gray-200 rounded-lg p-4 relative"
                     >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
+                      {/* FLEX ROW - Medicine wide, qty + remove aligned right */}
+                      <div className="flex flex-col md:flex-row md:items-end gap-6">
+                        {/* Medicine Search - FLEX GROWS */}
+                        <div className="flex-1 relative">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Medicine
                           </label>
-                          <select
-                            value={medicine.medicineId}
-                            onChange={(e) =>
-                              updateMedicine(
-                                index,
-                                "medicineId",
-                                e.target.value ? Number(e.target.value) : ""
-                              )
+
+                          <input
+                            type="text"
+                            value={
+                              medicine.searchText ?? medicine.selectedText ?? ""
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          >
-                            <option value="">Select Medicine</option>
-                            {availableMedicines.map((med: Medicine) => (
-                              <option key={med.id} value={med.id}>
-                                {med.name} (Stock: {med.quantity})
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(e) =>
+                              handleSearchChange(index, e.target.value)
+                            }
+                            placeholder="Search medicine..."
+                            onFocus={() => setActiveSuggestionIndex(index)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg 
+        focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+
+                          {/* Suggestions */}
+                          {activeSuggestionIndex === index &&
+                            medicine.suggestions &&
+                            medicine.suggestions.length > 0 && (
+                              <ul
+                                className="absolute z-30 bg-white w-full border border-gray-300 mt-1 
+          rounded-lg shadow-lg max-h-52 overflow-y-auto"
+                              >
+                                {medicine.suggestions.map((m) => (
+                                  <li
+                                    key={m.id}
+                                    onClick={() =>
+                                      handleSelectMedicine(index, m)
+                                    }
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                  >
+                                    {m.name} (Stock: {m.quantity})
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                         </div>
-                        <div>
+
+                        {/* Quantity - Fixed width */}
+                        <div className="w-full md:w-32">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Quantity
                           </label>
                           <input
                             type="number"
                             min="1"
-                            value={medicine.quantity ?? 0}
+                            value={medicine.quantity}
                             onChange={(e) =>
                               updateMedicine(
                                 index,
@@ -664,13 +817,17 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
                                 Number(e.target.value)
                               )
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg 
+        focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
                         </div>
+
+                        {/* Remove Button */}
                         <div className="flex items-end">
                           <button
                             onClick={() => removeMedicine(index)}
-                            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200"
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg 
+        transition-colors duration-200"
                           >
                             Remove
                           </button>
@@ -736,12 +893,11 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
                 onImageSelect={handleImageSelect}
                 onImageRemove={handleImageRemove}
               />
-              {/* Upload button for image */}
               {selectedImage && !doctorImageUrl && (
                 <button
                   type="button"
                   onClick={handleImageUpload}
-                  className="mt-4 flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg"
+                  className="mt-4 flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                   disabled={imageUploading}
                 >
                   {imageUploading ? (
@@ -750,13 +906,10 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
                       <span>Uploading...</span>
                     </>
                   ) : (
-                    <>
-                      <span>Upload Image</span>
-                    </>
+                    <span>Upload Image</span>
                   )}
                 </button>
               )}
-              {/* Show uploaded image preview if available */}
               {doctorImageUrl && !selectedImage && (
                 <div className="mt-4">
                   <img
@@ -773,7 +926,7 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
           </div>
 
           {/* Doctor Audio Upload Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mt-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-6">
               <PatientAudioUpload
                 audioUrl={doctorAudioUrl}
@@ -784,94 +937,67 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
             </div>
           </div>
 
-          <div className="mt-6">
-            <button
-              type="button"
-              disabled={!audioBlob || generatingSummary}
-              onClick={async () => {
-                if (!audioBlob) return;
-                setGeneratingSummary(true);
+          {/* AI Summary Generation */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6">
+              <button
+                type="button"
+                disabled={!audioBlob || generatingSummary}
+                onClick={handleGenerateSummary}
+                className={`w-full flex items-center justify-center px-5 py-3 rounded-lg text-white text-sm font-medium transition-all duration-200 ${
+                  generatingSummary || !audioBlob
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {generatingSummary ? (
+                  <div className="flex items-center space-x-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                      ></path>
+                    </svg>
+                    <span>Generating Summary...</span>
+                  </div>
+                ) : (
+                  "Generate AI Summary"
+                )}
+              </button>
 
-                const formData = new FormData();
-                formData.append("file", audioBlob, "doctor_audio.webm");
-
-                const res = await fetch(
-                  `${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/transcribe-summarize`,
-                  {
-                    method: "POST",
-                    body: formData,
-                  }
-                );
-
-                const data = await res.json();
-                if (data.summary) {
-                  setAiSummary(data.summary);
-                } else {
-                  alert("Failed to generate summary.");
-                }
-                setGeneratingSummary(false);
-              }}
-              className={`flex items-center justify-center px-5 py-3 
-      rounded-lg text-white text-sm font-medium transition-all duration-200 
-      ${
-        generatingSummary || !audioBlob
-          ? "bg-gray-400 cursor-not-allowed"
-          : "bg-blue-600 hover:bg-blue-700"
-      }`}
-            >
-              {generatingSummary ? (
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
-                    ></path>
-                  </svg>
-                  <span>Generating Summary...</span>
+              {aiSummary && (
+                <div className="mt-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    AI-Generated Summary (Editable)
+                  </label>
+                  <textarea
+                    value={aiSummary}
+                    onChange={(e) => setAiSummary(e.target.value)}
+                    rows={6}
+                    className="w-full p-4 text-gray-900 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white shadow-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Review the summary and make corrections if needed before
+                    saving prescription.
+                  </p>
                 </div>
-              ) : (
-                "Generate AI Summary"
               )}
-            </button>
-          </div>
-
-          {aiSummary && (
-            <div className="mt-6 bg-gray-50 border border-gray-200 rounded-xl p-5">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                AI-Generated Summary (Editable)
-              </label>
-
-              <textarea
-                value={aiSummary}
-                onChange={(e) => setAiSummary(e.target.value)}
-                rows={6}
-                className="
-        w-full p-4 text-gray-900 text-sm rounded-lg border border-gray-300
-        focus:ring-2 focus:ring-teal-500 focus:border-transparent
-        bg-white shadow-sm resize-none
-      "
-              />
-
-              <p className="text-xs text-gray-500 mt-2">
-                Review the summary and make corrections if needed before saving
-                prescription.
-              </p>
             </div>
-          )}
+          </div>
 
           {/* Save Button */}
           <div className="flex justify-end">
@@ -882,7 +1008,7 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
                 (!selectedMedicines.some((med) => med.medicineId) &&
                   labTests.length === 0)
               }
-              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
             >
               {saving ? (
                 <>

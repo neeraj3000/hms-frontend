@@ -338,7 +338,7 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
 
           if (res.ok && isMountedRef.current) {
             const data = await res.json();
-            updateMedicine(index, "suggestions", data as Medicine[]);
+            updateMedicine(index, "suggestions", data.data as Medicine[]);
           }
         } catch (err) {
           const local = availableMedicines.filter((m) =>

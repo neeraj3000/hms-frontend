@@ -6,6 +6,7 @@ import MaintenanceSchedule from './MaintenanceSchedule';
 import StoreKeeperProfile from './StoreKeeperProfile';
 import MedicineInventory from '@/app/(pharmacist)/pharmacist/MedicineInventory';
 import RequestIndent from './RequestIndent';
+import Profile from '@/components/Profile';
 
 const StoreKeeperDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('inventory');
@@ -24,7 +25,7 @@ const StoreKeeperDashboard: React.FC = () => {
       // case 'maintenance':
       //   return <MaintenanceSchedule />;
       case 'profile':
-        return <StoreKeeperProfile />;
+        return <Profile color="orange"/>;
       default:
         return <StoreKeeperOverview setActiveTab={setActiveTab} />;
     }

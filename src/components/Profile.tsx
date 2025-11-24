@@ -54,6 +54,13 @@ const colorMap: Record<
     buttonHover: "hover:bg-teal-700",
     focusRing: "focus:ring-teal-500",
   },
+  orange: {
+    bg: "bg-orange-100",
+    text: "text-orange-600",
+    button: "bg-orange-600",
+    buttonHover: "hover:bg-orange-700",
+    focusRing: "focus:ring-orange-500",
+  },
 };
 
 

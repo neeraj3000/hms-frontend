@@ -282,7 +282,7 @@ const PatientRegistration: React.FC = () => {
       setTimeout(() => {
         resetForm();
         setSubmitSuccess(false);
-      }, 1500);
+      }, 15000);
     } catch {
       alert("Error submitting form.");
     } finally {

@@ -57,10 +57,10 @@ const InventoryAnalytics: React.FC = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch(`/api/pharmacist/analytics?days=${timeRange}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/analytics/medicines?days=${timeRange}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          // 'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json',
         },
       });

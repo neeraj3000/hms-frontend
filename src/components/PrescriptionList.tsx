@@ -18,7 +18,7 @@ import getStatusColor from "@/components/getStatusColor";
 
 type PrescriptionListProps = {
   title: string;
-  accentColor: "green" | "blue" | "purple" | "red" | "orange";
+  accentColor: "green" | "blue" | "purple" | "red" | "orange" | "indigo";
   apiEndpoint: string; // Example: "/prescriptions" or "/lab-reports"
   icon?: React.ReactNode;
 };
@@ -105,7 +105,7 @@ const PrescriptionList: React.FC<PrescriptionListProps> = ({
       });
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions?${params}`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}${apiEndpoint}?${params}`
       );
       const result = await res.json();
 
@@ -304,16 +304,26 @@ const PrescriptionList: React.FC<PrescriptionListProps> = ({
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                       <div className="lg:col-span-1">
                         <div className="flex items-center space-x-3">
-                          <div className={clsx("w-12 h-12 rounded-full flex items-center justify-center", `bg-${color}-100`)}>
-                            <User className={clsx("w-6 h-6", `text-${color}-600`)} />
+                          <div
+                            className={clsx(
+                              "w-12 h-12 rounded-full flex items-center justify-center",
+                              `bg-${color}-100`
+                            )}
+                          >
+                            <User
+                              className={clsx("w-6 h-6", `text-${color}-600`)}
+                            />
                           </div>
                           <div>
                             <h4 className="font-semibold text-gray-900">
-                              {prescription.student?.name}
+                              {prescription.student?.name ||
+                                prescription.other_name ||
+                                "Unknown Patient"}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              ID: {prescription.student?.id_number}
+                              ID: {prescription.student?.id_number || "—"}
                             </p>
+
                             <p className="text-xs text-gray-500">
                               PRX: {prescription.id}
                             </p>

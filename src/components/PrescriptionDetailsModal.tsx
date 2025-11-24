@@ -48,23 +48,42 @@ interface LabReport {
 }
 
 interface Prescription {
-  id?: string | number;
-  student?: Student | null;
+  id?: number;
+
+  // Patient types
+  patient_type?: "student" | "others";
+  visit_type?: "normal" | "emergency";
+
+  // Student or Other Patient
+  student?: Student | null; // null when patient_type = "others"
+  other_name?: string | null; // used when patient_type = "others"
+
+  // Status
   status?: string;
-  notes?: string;
-  weight?: string;
-  bp?: string;
-  temperature?: string;
+
+  // Notes
+  nurse_notes?: string | null;
+  doctor_notes?: string | null;
+  ai_summary?: string | null;
+
+  // Media
+  nurse_image_url?: string | null;
+  doctor_image_url?: string | null;
+  audio_url?: string | null;
+
+  // Vitals
+  weight?: string | null;
+  bp?: string | null;
+  temperature?: string | null;
+  age?: number | null;
+
+  // Timestamps
   created_at?: string;
   updated_at?: string;
+
+  // Relations
   medicines?: MedicineEntry[];
   lab_reports?: LabReport[];
-  nurse_notes?: string;
-  doctor_notes?: string;
-  ai_summary?: string;
-  nurse_image_url?: string;
-  doctor_image_url?: string;
-  audio_url?: string;
 }
 
 const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
@@ -104,7 +123,7 @@ const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
       console.error("Error fetching prescription details:", error);
       // Sample data for demo fallback
       setPrescription({
-        id: prescriptionId ?? undefined,
+        id: prescriptionId ? Number(prescriptionId) : undefined,
         student: {
           id: 1,
           id_number: "R200137",
@@ -114,8 +133,6 @@ const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
           section: "A",
         },
         status: "Prescribed by Doctor",
-        notes:
-          "Patient presented with high fever and severe headache. Prescribed symptomatic treatment.",
         weight: "68kg",
         bp: "140/90",
         temperature: "102.1°F",
@@ -271,47 +288,99 @@ const PrescriptionDetailsModal: React.FC<PrescriptionDetailsModalProps> = ({
                     <User className="w-5 h-5 mr-2 text-blue-600" />
                     Patient Information
                   </h3>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Patient Type */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Patient Type
+                      </label>
+                      <p className="text-gray-900 font-medium">
+                        {prescription?.patient_type === "student"
+                          ? "Student"
+                          : "Other Patient"}
+                      </p>
+                    </div>
+
+                    {/* Visit Type */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Visit Type
+                      </label>
+                      <p className="text-gray-900 font-medium">
+                        {prescription?.visit_type
+                          ? prescription.visit_type.charAt(0).toUpperCase() +
+                            prescription.visit_type.slice(1)
+                          : "—"}
+                      </p>
+                    </div>
+
+                    {/* Name (Student or Others) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
                         Name
                       </label>
-                      <p className="text-gray-900 font-medium break-words">
-                        {prescription?.student?.name}
+                      <p className="text-gray-900 font-medium">
+                        {prescription?.student?.name ||
+                          prescription?.other_name ||
+                          "Unknown"}
                       </p>
                     </div>
+
+                    {/* Age */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        Student ID
+                        Age
                       </label>
-                      <p className="text-gray-900">
-                        {prescription?.student?.id_number}
+                      <p className="text-gray-900 font-medium">
+                        {prescription?.age || "—"}
                       </p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Branch
-                      </label>
-                      <p className="text-gray-900">
-                        {prescription?.student?.branch}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Section
-                      </label>
-                      <p className="text-gray-900">
-                        {prescription?.student?.section}
-                      </p>
-                    </div>
-                    <div className="col-span-1 sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Email
-                      </label>
-                      <p className="text-gray-900 break-words">
-                        {prescription?.student?.email}
-                      </p>
-                    </div>
+
+                    {/* Student-only fields */}
+                    {prescription?.patient_type === "student" && (
+                      <>
+                        {/* Student ID */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Student ID
+                          </label>
+                          <p className="text-gray-900">
+                            {prescription?.student?.id_number || "—"}
+                          </p>
+                        </div>
+
+                        {/* Branch */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Branch
+                          </label>
+                          <p className="text-gray-900">
+                            {prescription?.student?.branch || "—"}
+                          </p>
+                        </div>
+
+                        {/* Section */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Section
+                          </label>
+                          <p className="text-gray-900">
+                            {prescription?.student?.section || "—"}
+                          </p>
+                        </div>
+
+                        {/* Email */}
+                        <div className="col-span-1 sm:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Email
+                          </label>
+                          <p className="text-gray-900 break-words">
+                            {prescription?.student?.email || "—"}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

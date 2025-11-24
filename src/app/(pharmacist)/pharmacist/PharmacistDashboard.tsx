@@ -6,6 +6,7 @@ import MedicineInventory from './MedicineInventory';
 import IssueMedicine from './IssueMedicine';
 import InventoryAnalytics from './InventoryAnalytics';
 import PharmacistProfile from './PharmacistProfile';
+import Profile from '@/components/Profile';
 
 const PharmacistDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('prescriptions');
@@ -24,7 +25,7 @@ const PharmacistDashboard: React.FC = () => {
       case 'analytics':
         return <InventoryAnalytics />;
       case 'profile':
-        return <PharmacistProfile />;
+        return <Profile color="purple"/>;
       default:
         return <PharmacistOverview setActiveTab={setActiveTab} />;
     }

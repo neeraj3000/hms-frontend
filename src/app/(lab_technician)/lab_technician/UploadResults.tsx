@@ -44,6 +44,7 @@ const UploadResults: React.FC<UploadResultsProps> = ({ labReportId, onUploadComp
 
       if (reportResponse.ok) {
         const reportData = await reportResponse.json();
+        console.log('Fetched lab report data:', reportData);
         setLabReport(reportData);
 
         // Fetch prescription details to get student info
@@ -147,7 +148,7 @@ const UploadResults: React.FC<UploadResultsProps> = ({ labReportId, onUploadComp
       const data = await response.json();
       console.log("Lab report updated successfully:", data);
 
-      // ✅ Show success message
+      // Show success message
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -234,33 +235,105 @@ const UploadResults: React.FC<UploadResultsProps> = ({ labReportId, onUploadComp
         <div className="space-y-6">
           {/* Patient Info */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <User className="w-5 h-5 mr-2 text-teal-600" />
-                Patient Information
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
-                  <p className="text-gray-900 font-medium">{labReport?.prescription?.student?.name}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Student ID</label>
-                  <p className="text-gray-900">{labReport?.prescription?.student?.id_number}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Branch</label>
-                  <p className="text-gray-900">{labReport?.prescription?.student?.branch}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Section</label>
-                  <p className="text-gray-900">{labReport?.prescription?.student?.section}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+                      <div className="p-6 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                          <User className="w-5 h-5 mr-2 text-green-600" />
+                          Patient Information
+                        </h3>
+                      </div>
+          
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Patient Type */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Patient Type
+                            </label>
+                            <p className="text-gray-900 font-medium">
+                              {labReport?.prescription?.patient_type === "student"
+                                ? "Student"
+                                : "Other Patient"}
+                            </p>
+                          </div>
+          
+                          {/* Visit Type */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Visit Type
+                            </label>
+                            <p className="text-gray-900 font-medium">
+                              {labReport?.prescription?.visit_type
+                                ? labReport?.prescription.visit_type.charAt(0).toUpperCase() +
+                                  labReport?.prescription.visit_type.slice(1)
+                                : "N/A"}
+                            </p>
+                          </div>
+          
+                          {/* Name */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Name
+                            </label>
+                            <p className="text-gray-900 font-medium">
+                              {labReport?.prescription?.student?.name ||
+                                labReport?.prescription?.other_name ||
+                                "N/A"}
+                            </p>
+                          </div>
+          
+                          {/* Age */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Age
+                            </label>
+                            <p className="text-gray-900 font-medium">
+                              {labReport?.prescription?.age || "N/A"}
+                            </p>
+                          </div>
+          
+                          {/* STUDENT ONLY FIELDS */}
+                          {labReport?.prescription?.patient_type === "student" && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Student ID
+                                </label>
+                                <p className="text-gray-900">
+                                  {labReport?.prescription?.student?.id_number || "N/A"}
+                                </p>
+                              </div>
+          
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Branch
+                                </label>
+                                <p className="text-gray-900">
+                                  {labReport?.prescription?.student?.branch || "N/A"}
+                                </p>
+                              </div>
+          
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Section
+                                </label>
+                                <p className="text-gray-900">
+                                  {labReport?.prescription?.student?.section || "N/A"}
+                                </p>
+                              </div>
+          
+                              <div className="col-span-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Email
+                                </label>
+                                <p className="text-gray-900 break-words">
+                                  {labReport?.prescription?.student?.email || "N/A"}
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
           {/* Test Details */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">

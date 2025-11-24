@@ -1,422 +1,448 @@
-import React, { useState } from 'react';
-import { User, Mail, Calendar, Save, AlertCircle, CheckCircle, FileText } from 'lucide-react';
-import { useSession } from 'next-auth/react';
-import { uploadImageToCloudinary } from '@/lib/cloudinary';
-import PatientImageUpload from '@/components/PatientImageUpload';
-import PatientVitalSigns from '@/components/PatientVitalSigns';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  User,
+  Mail,
+  Calendar,
+  Save,
+  AlertCircle,
+  CheckCircle,
+  FileText,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import PatientImageUpload from "@/components/PatientImageUpload";
+import PatientVitalSigns from "@/components/PatientVitalSigns";
+import PatientPersonalDetails from "@/components/PatientPersonalDetails";
+import EmergencyActions, {
+  SelectedMedicineType,
+} from "@/components/EmergencyActions";
+
+const DEBOUNCE_MS = 400;
 
 const PatientRegistration: React.FC = () => {
   const { data: session } = useSession();
-  
-  const [formData, setFormData] = useState({
-    studentId: '',
-    name: '',
-    email: '',
-    age: '',
-    temperature: '',
-    bloodPressureSystolic: '',
-    bloodPressureDiastolic: '',
-    weight: '',
-    consultationNotes: '',
-    branch: '',
-    section: '',
+
+  // 🔥 Unified state
+  const [form, setForm] = useState({
+    studentId: "",
+    name: "",
+    email: "",
+    branch: "",
+    section: "",
+    age: "",
+    temperature: "",
+    bloodPressureSystolic: "",
+    bloodPressureDiastolic: "",
+    weight: "",
+    consultationNotes: "",
   });
 
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [patientType, setPatientType] = useState<"student" | "others">(
+    "student"
+  );
+  const [visitType, setVisitType] = useState<"normal" | "emergency">("normal");
+
+  const [selectedMedicines, setSelectedMedicines] = useState<
+    SelectedMedicineType[]
+  >([]);
+  const [labTests, setLabTests] = useState<string[]>([]);
+
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Auto-generate email from student ID
-    if (name === 'studentId' && value) {
-      const email = `r${value.toLowerCase()}@rguktrkv.ac.in`;
-      setFormData(prev => ({
-        ...prev,
-        email: email
-      }));
+  const fetchTimer = useRef<any>(null);
+  const foundStudentRef = useRef<any>(null);
+
+  // RESET on type
+  const resetForm = () => {
+    setForm({
+      studentId: "",
+      name: "",
+      email: "",
+      branch: "",
+      section: "",
+      age: "",
+      temperature: "",
+      bloodPressureSystolic: "",
+      bloodPressureDiastolic: "",
+      weight: "",
+      consultationNotes: "",
+    });
+
+    setSelectedMedicines([]);
+    setLabTests([]);
+    setImagePreview(null);
+    setSelectedImage(null);
+    foundStudentRef.current = null;
+  };
+
+  useEffect(() => resetForm(), [patientType]);
+  useEffect(() => {
+    if (visitType === "normal") {
+      setSelectedMedicines([]);
+      setLabTests([]);
+    }
+  }, [visitType]);
+
+  // Generic handler
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+
+    setForm((prev) => ({ ...prev, [name]: value }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
+  // Student ID handler
+  const handleStudentIdChange = (value: string) => {
+    const trimmed = value.trim();
+
+    // update ID + auto-email
+    setForm((prev) => ({
+      ...prev,
+      studentId: trimmed,
+      email: trimmed
+        ? "rr" + trimmed.toLowerCase().slice(1) + "@rguktrkv.ac.in"
+        : "",
+    }));
+
+    if (!trimmed) return;
+
+    if (fetchTimer.current) clearTimeout(fetchTimer.current);
+
+    fetchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/students/id_number/${trimmed}`
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          foundStudentRef.current = data;
+
+          setForm((prev) => ({
+            ...prev,
+            name: data.name || "",
+            email: data.email || prev.email,
+            branch: data.branch || "",
+            section: data.section || "",
+          }));
+        } else {
+          foundStudentRef.current = null;
+          setForm((prev) => ({
+            ...prev,
+            name: "",
+            branch: "",
+            section: "",
+          }));
+        }
+      } catch {}
+    }, DEBOUNCE_MS);
+  };
+
+  // File Handlers
   const handleImageSelect = (file: File, preview: string) => {
     setSelectedImage(file);
     setImagePreview(preview);
   };
 
-  const handleImageRemove = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
+  const validate = () => {
+    const next: any = {};
+
+    if (patientType === "student") {
+      if (!form.studentId) next.studentId = "Student ID is required";
+    } else {
+      if (!form.name.trim()) next.name = "Name is required";
+    }
+
+    if (!form.age.trim()) next.age = "Age is required";
+
+    if (visitType === "emergency") {
+      const invalidMed = selectedMedicines.find(
+        (m) => !m.medicineId || !m.quantity
+      );
+      if (invalidMed) next.medicines = "Please add valid medicines";
+    }
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-
-    if (!formData.studentId.trim()) {
-      newErrors.studentId = 'Student ID is required';
-    } else if (!/^[rR]\d{6}$/.test(formData.studentId)) {
-      newErrors.studentId = 'Student ID must be in format R123456';
-    }
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Patient name is required';
-    }
-
-    if (!formData.age.trim()) {
-      newErrors.age = 'Age is required';
-    } else if (parseInt(formData.age) < 1 || parseInt(formData.age) > 120) {
-      newErrors.age = 'Please enter a valid age';
-    }
-
-    if (formData.temperature && (parseFloat(formData.temperature) < 90 || parseFloat(formData.temperature) > 110)) {
-      newErrors.temperature = 'Please enter a valid temperature (90-110°F)';
-    }
-
-    if (formData.weight && (parseFloat(formData.weight) < 20 || parseFloat(formData.weight) > 300)) {
-      newErrors.weight = 'Please enter a valid weight (20-300 kg)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
 
     try {
-      // Upload image to Cloudinary if selected
-      let imageUrl: string | null = null;
+      let nurseImageUrl = null;
+
       if (selectedImage) {
-        try {
-          imageUrl = await uploadImageToCloudinary(selectedImage);
-          console.log('Image uploaded to Cloudinary:', imageUrl);
-        } catch (error) {
-          console.error('Failed to upload image to Cloudinary:', error);
-          alert('Failed to upload image. Please try again or continue without image.');
-          // Continue with submission even if image upload fails
+        nurseImageUrl = await uploadImageToCloudinary(selectedImage);
+      }
+
+      // STUDENT LOGIC
+      let studentIdDb: number | null = null;
+
+      if (patientType === "student") {
+        const idLower = form.studentId.toLowerCase();
+
+        if (foundStudentRef.current?.id) {
+          studentIdDb = foundStudentRef.current.id;
+        } else {
+          const check = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/students/id_number/${idLower}`
+          );
+
+          if (check.ok) {
+            const st = await check.json();
+            studentIdDb = st.id;
+          } else {
+            // Create student
+            const createRes = await fetch(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL}/students`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id_number: idLower,
+                  name: form.name,
+                  email: form.email,
+                  branch: form.branch,
+                  section: form.section,
+                }),
+              }
+            );
+
+            const newSt = await createRes.json();
+            studentIdDb = newSt.id;
+          }
         }
       }
 
-      // Combine BP
       const bp =
-        formData.bloodPressureSystolic && formData.bloodPressureDiastolic
-          ? `${formData.bloodPressureSystolic}/${formData.bloodPressureDiastolic}`
+        form.bloodPressureSystolic && form.bloodPressureDiastolic
+          ? `${form.bloodPressureSystolic}/${form.bloodPressureDiastolic}`
           : null;
 
-      const nurseId = session?.user?.id;
+      const payload: any = {
+        student_id: studentIdDb,
+        other_name: patientType === "others" ? form.name : null,
 
-      // Check if student exists
-      let studentIdBackend = null;
-      const checkStudentRes = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/students/id_number/${formData.studentId}`
-      );
+        nurse_id: session?.user?.id,
+        nurse_notes: form.consultationNotes || null,
+        weight: form.weight,
+        bp,
+        age: Number(form.age),
+        temperature: form.temperature,
+        nurse_image_url: nurseImageUrl,
+        patient_type: patientType,
+        visit_type: visitType,
 
-      if (checkStudentRes.ok) {
-        const studentData = await checkStudentRes.json();
-        studentIdBackend = studentData.id;
-        console.log("Existing student found:", studentData);
-      } else if (checkStudentRes.status === 404) {
-        // Create new student
-        const createStudentRes = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/students`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              id_number: formData.studentId,
-              name: formData.name,
-              email: formData.email,
-              branch: formData.branch || null,
-              section: formData.section || null,
-            }),
-          }
-        );
-
-        if (!createStudentRes.ok) {
-          throw new Error(`Error creating student: ${createStudentRes.statusText}`);
-        }
-
-        const newStudent = await createStudentRes.json();
-        studentIdBackend = newStudent.id;
-        console.log("Student created:", newStudent);
-      } else {
-        throw new Error(`Error checking student: ${checkStudentRes.statusText}`);
-      }
-
-      // Build prescription payload
-      const payload = {
-        student_id: studentIdBackend,
-        nurse_id: nurseId,
-        nurse_notes: formData.consultationNotes || null,
-        weight: formData.weight || null,
-        bp: bp,
-        age: formData.age ? parseInt(formData.age) : null,
-        temperature: formData.temperature || null,
-        nurse_image_url: imageUrl, // Cloudinary URL (optional)
+        status:
+          visitType === "normal"
+            ? "Initiated by Nurse"
+            : selectedMedicines.length && labTests.length
+            ? "Medication Prescribed and Lab Test Requested"
+            : selectedMedicines.length
+            ? "Medication Prescribed by Nurse (Emergency)"
+            : labTests.length
+            ? "Lab Test Requested"
+            : "Initiated by Nurse",
       };
 
-      console.log("Prescription Payload:", payload);
+      if (visitType === "emergency") {
+        payload.medicines = selectedMedicines.map((m) => ({
+          medicine_id: m.medicineId,
+          quantity: m.quantity,
+        }));
 
-      // Create prescription
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Error creating prescription: ${res.statusText}`);
+        payload.lab_tests = labTests;
       }
 
-      const data = await res.json();
-      console.log("Prescription created:", data);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/prescriptions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) throw new Error("Error creating prescription");
 
       setSubmitSuccess(true);
-
-      // Reset form after 3 seconds
       setTimeout(() => {
-        setFormData({
-          studentId: "",
-          name: "",
-          email: "",
-          age: "",
-          temperature: "",
-          bloodPressureSystolic: "",
-          bloodPressureDiastolic: "",
-          weight: "",
-          consultationNotes: "",
-          branch: "",
-          section: "",
-        });
-        setSelectedImage(null);
-        setImagePreview(null);
+        resetForm();
         setSubmitSuccess(false);
-      }, 3000);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      alert('Failed to register patient. Please try again.');
+      }, 1500);
+    } catch {
+      alert("Error submitting form.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (submitSuccess) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-          <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-green-900 mb-2">Patient Registered Successfully!</h2>
-          <p className="text-green-700">
-            Patient record for {formData.name} (ID: {formData.studentId}) has been created and sent to the doctor for review.
-          </p>
-        </div>
+  return submitSuccess ? (
+    <div className="max-w-4xl mx-auto py-8">
+      <div className="bg-green-50 p-8 border border-green-200 rounded-xl text-center">
+        <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-2" />
+        <h2 className="text-2xl font-semibold text-green-700">
+          Patient Registered Successfully
+        </h2>
       </div>
-    );
-  }
+    </div>
+  ) : (
+    <div className="max-w-4xl mx-auto py-8">
+      <div className="bg-white rounded-xl border shadow-sm p-6">
+        <h2 className="text-2xl font-bold flex items-center mb-4">
+          <User className="w-6 h-6 mr-2 text-blue-600" />
+          Register New Patient
+        </h2>
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-            <User className="w-6 h-6 mr-3 text-blue-600" />
-            Register New Patient
-          </h2>
-          <p className="text-gray-600 mt-2">Enter patient details and initial assessment</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Information */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Patient Type + Visit Type */}
+          {/* Patient Type + Visit Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
-                Student ID <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Patient Type
+              </label>
+              <select
+                value={patientType}
+                onChange={(e) =>
+                  setPatientType(e.target.value as "student" | "others")
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              >
+                <option value="student">Student</option>
+                <option value="others">Others</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Visit Type
+              </label>
+              <select
+                value={visitType}
+                onChange={(e) =>
+                  setVisitType(e.target.value as "normal" | "emergency")
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              >
+                <option value="normal">Normal</option>
+                <option value="emergency">Emergency</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Student ID (Only Students) */}
+          {patientType === "student" && (
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Student ID
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
-                  type="text"
-                  id="studentId"
-                  name="studentId"
-                  value={formData.studentId}
-                  onChange={handleInputChange}
-                  placeholder="e.g., R200137"
-                  suppressHydrationWarning
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.studentId ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
+                    errors.studentId ? "border-red-500" : "border-gray-300"
                   }`}
+                  value={form.studentId}
+                  onChange={(e) => handleStudentIdChange(e.target.value)}
+                  placeholder="R200137"
                 />
               </div>
               {errors.studentId && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.studentId}
-                </p>
+                <p className="text-red-600 text-sm mt-1">{errors.studentId}</p>
               )}
             </div>
+          )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email (Auto-generated)
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  readOnly
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-gray-50 rounded-lg"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter patient's full name"
-                suppressHydrationWarning
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.name ? 'border-red-300' : 'border-gray-300'
-                }`}
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.name}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-2">
-                Age <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="number"
-                  id="age"
-                  name="age"
-                  value={formData.age}
-                  onChange={handleInputChange}
-                  placeholder="Age in years"
-                  min="1"
-                  max="120"
-                  suppressHydrationWarning
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.age ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                />
-              </div>
-              {errors.age && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.age}
-                </p>
-              )}
-            </div>
-          </div>
+          {/* Patient Details (includes age now) */}
+          <PatientPersonalDetails
+            patientType={patientType}
+            formData={{
+              name: form.name,
+              email: form.email,
+              branch: form.branch,
+              section: form.section,
+              age: form.age,
+            }}
+            errors={errors}
+            onChange={handleChange}
+          />
 
           {/* Vital Signs */}
           <PatientVitalSigns
             formData={{
-              temperature: formData.temperature,
-              bloodPressureSystolic: formData.bloodPressureSystolic,
-              bloodPressureDiastolic: formData.bloodPressureDiastolic,
-              weight: formData.weight,
+              temperature: form.temperature,
+              bloodPressureSystolic: form.bloodPressureSystolic,
+              bloodPressureDiastolic: form.bloodPressureDiastolic,
+              weight: form.weight,
             }}
             errors={errors}
-            onChange={handleInputChange}
+            onChange={handleChange}
           />
 
-          {/* Clinical Information */}
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2 text-purple-600" />
-              Clinical Information
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="consultationNotes" className="block text-sm font-medium text-gray-700 mb-2">
-                  Initial Assessment Notes
-                </label>
-                <textarea
-                  id="consultationNotes"
-                  name="consultationNotes"
-                  value={formData.consultationNotes}
-                  onChange={handleInputChange}
-                  rows={4}
-                  placeholder="Add any additional observations or notes from the initial assessment"
-                  suppressHydrationWarning
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
-            </div>
+          {/* Nurse Notes */}
+          <div>
+            <label>Initial Assessment Notes</label>
+            <textarea
+              name="consultationNotes"
+              value={form.consultationNotes}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
           </div>
 
-          {/* Image Upload */}
+          {/* Emergency Actions */}
+          {visitType === "emergency" && (
+            <EmergencyActions
+              selectedMedicines={selectedMedicines}
+              setSelectedMedicines={setSelectedMedicines}
+              labTests={labTests}
+              setLabTests={setLabTests}
+            />
+          )}
+
+          {/* Image */}
           <PatientImageUpload
             selectedImage={selectedImage}
             imagePreview={imagePreview}
             onImageSelect={handleImageSelect}
-            onImageRemove={handleImageRemove}
+            onImageRemove={() => {
+              setSelectedImage(null);
+              setImagePreview(null);
+            }}
           />
 
-          {/* Submit Button */}
-          <div className="flex justify-end pt-6 border-t border-gray-200">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Registering...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  <span>Register Patient</span>
-                </>
-              )}
-            </button>
-          </div>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Registering...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" /> Register Patient
+              </>
+            )}
+          </button>
         </form>
       </div>
     </div>

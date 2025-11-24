@@ -38,7 +38,7 @@ const StudentDashboard: React.FC = () => {
       case "prescriptions":
         return <RecentPrescriptions student_id={studentId!} />;
       case "profile":
-        return <Profile />;
+        return <Profile studentId={studentId!}/>;
       default:
         return <RecentPrescriptions student_id={studentId!} />;
     }

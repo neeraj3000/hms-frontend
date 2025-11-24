@@ -286,8 +286,8 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ onSelectPatient, setActiveT
                           <User className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900">{prescription.student_name}</h4>
-                          <p className="text-sm text-gray-600">ID: {prescription.id_number}</p>
+                          <h4 className="font-semibold text-gray-900">{prescription?.student?.name || prescription?.other_name}</h4>
+                          <p className="text-sm text-gray-600">ID: {prescription?.student?.id_number || 'N/A'}</p>
                           <p className="text-sm text-gray-600">Age: {prescription?.age}</p>
                         </div>
                       </div>

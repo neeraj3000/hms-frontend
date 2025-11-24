@@ -35,15 +35,38 @@ interface StudentType {
 
 interface PrescriptionType {
   id?: number | string;
-  student_id?: string;
+
+  // Patient type
+  patient_type?: "student" | "others";
+  visit_type?: "normal" | "emergency";
+
+  // Students OR Others
+  student_id?: number | null; // null for 'others'
+  student?: StudentType | null; // object or null
+  other_name?: string | null; // only for 'others'
+
+  // Status
   status?: string;
-  notes?: string;
-  temperature?: string;
-  bp?: string;
-  weight?: string;
+
+  // Notes
+  nurse_notes?: string | null;
+  doctor_notes?: string | null;
+  ai_summary?: string | null;
+
+  // Vitals
+  temperature?: string | null;
+  bp?: string | null;
+  weight?: string | null;
+  age?: number | null;
+
+  // Media
+  nurse_image_url?: string | null;
+  doctor_image_url?: string | null;
+  audio_url?: string | null;
+
+  // Timestamps
   created_at?: string;
-  nurse_notes?: string;
-  age?: number;
+  updated_at?: string;
 }
 
 interface Medicine {
@@ -603,6 +626,7 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
         {/* Patient Information */}
         <div className="space-y-6">
           {/* Basic Info */}
+          {/* Patient Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -610,38 +634,96 @@ const PatientDetails: React.FC<PatientDetailsProps> = ({
                 Patient Information
               </h3>
             </div>
+
             <div className="p-6">
               <div className="grid grid-cols-2 gap-4">
+                {/* Patient Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Patient Type
+                  </label>
+                  <p className="text-gray-900 font-medium">
+                    {prescription?.patient_type === "student"
+                      ? "Student"
+                      : "Other Patient"}
+                  </p>
+                </div>
+
+                {/* Visit Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Visit Type
+                  </label>
+                  <p className="text-gray-900 font-medium">
+                    {prescription?.visit_type
+                      ? prescription.visit_type.charAt(0).toUpperCase() +
+                        prescription.visit_type.slice(1)
+                      : "N/A"}
+                  </p>
+                </div>
+
+                {/* Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Name
                   </label>
                   <p className="text-gray-900 font-medium">
-                    {student?.name || "N/A"}
+                    {prescription?.student?.name ||
+                      prescription?.other_name ||
+                      "N/A"}
                   </p>
                 </div>
+
+                {/* Age */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Student ID
+                    Age
                   </label>
-                  <p className="text-gray-900">{student?.id_number || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Branch
-                  </label>
-                  <p className="text-gray-900">{student?.branch || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Created At
-                  </label>
-                  <p className="text-gray-900">
-                    {prescription?.created_at
-                      ? new Date(prescription.created_at).toLocaleString()
-                      : "N/A"}
+                  <p className="text-gray-900 font-medium">
+                    {prescription?.age || "N/A"}
                   </p>
                 </div>
+
+                {/* STUDENT ONLY FIELDS */}
+                {prescription?.patient_type === "student" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Student ID
+                      </label>
+                      <p className="text-gray-900">
+                        {prescription?.student?.id_number || "N/A"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Branch
+                      </label>
+                      <p className="text-gray-900">
+                        {prescription?.student?.branch || "N/A"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Section
+                      </label>
+                      <p className="text-gray-900">
+                        {prescription?.student?.section || "N/A"}
+                      </p>
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Email
+                      </label>
+                      <p className="text-gray-900 break-words">
+                        {prescription?.student?.email || "N/A"}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

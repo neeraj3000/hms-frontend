@@ -117,7 +117,7 @@ const DoctorOverview: React.FC<DoctorOverviewProps> = ({ setActiveTab }) => {
       change: '+8%',
       icon: ClipboardList,
       color: 'green',
-      onClick: () => setActiveTab('queue')
+      onClick: () => setActiveTab('prescriptions')
     },
     {
       title: 'Pending Reviews',

@@ -44,6 +44,7 @@ export const adminService = {
   // Prescriptions
   getPrescriptions: async (): Promise<Prescription[]> => {
     const response = await axios.get(`${API_BASE_URL}/admin/prescriptions`);
+    console.log('Fetched prescriptions:', response.data);
     return response.data;
   },
 

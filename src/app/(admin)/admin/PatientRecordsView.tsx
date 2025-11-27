@@ -169,7 +169,7 @@ export default function PatientRecordsView({ prescriptions, students }: PatientR
                     <span className="text-xs sm:text-sm font-medium text-gray-900">#{p.id}</span>
                   </td>
                   <td className="px-4 sm:px-6 py-4">
-                    <div className="text-xs sm:text-sm font-medium text-gray-900">{getStudentName(p.student_id)}</div>
+                    <div className="text-xs sm:text-sm font-medium text-gray-900">{p.student_id ? getStudentName(p.student_id) : p.other_name}</div>
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                     <div className="text-xs sm:text-sm text-gray-600">{p.created_at ? new Date(p.created_at as unknown as string).toLocaleDateString() : '-'}</div>

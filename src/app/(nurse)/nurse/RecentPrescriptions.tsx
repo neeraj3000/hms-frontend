@@ -4,7 +4,7 @@ import PrescriptionList from "@/components/PrescriptionList";
 
 const RecentPrescriptions = () => {
   return (
-    <div className="p-6">
+    <div className="p-1">
       <PrescriptionList
         title="Prescription History"
         accentColor="blue"

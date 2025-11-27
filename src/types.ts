@@ -46,6 +46,7 @@ export interface InventoryItem {
 }
 
 export interface Prescription {
+  other_name: ReactNode;
 	id: number;
 	student_id: number;
 	nurse_id: number;

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
-import TopNavbar from '@/components/layout/TopNavbar';
-import SideNav from '@/components/layout/SideNav';
-import OverviewView from './OverviewView';
-import UserManagementView from './UserManagementView';
-import PatientRecordsView from './PatientRecordsView';
-import AnalyticsView from './AnalyticsView';
-import InventoryView from './InventoryView';
-import AnomalyView from './AnomalyView';
-import IndentsHistory from './IndentHistory';
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import TopNavbar from "@/components/layout/TopNavbar";
+import SideNav from "@/components/layout/SideNav";
+import OverviewView from "./OverviewView";
+import UserManagementView from "./UserManagementView";
+import PatientRecordsView from "./PatientRecordsView";
+import AnalyticsView from "./AnalyticsView";
+import InventoryView from "./InventoryView";
+import AnomalyView from "./AnomalyView";
+import IndentsHistory from "./IndentHistory";
 import {
   DashboardStats,
   User,
@@ -19,7 +19,8 @@ import {
   Prescription,
   MedicineAnalytics,
   AnomalyAlert,
-} from '@/types';
+  AnomalyResponse,
+} from "@/types";
 import {
   LayoutDashboard,
   Users,
@@ -29,22 +30,22 @@ import {
   AlertTriangle,
   FileText,
   Settings,
-} from 'lucide-react';
-import { adminService } from '@/services/adminService';
+} from "lucide-react";
+import { adminService } from "@/services/adminService";
+
+type View =
+  | "overview"
+  | "users"
+  | "patients"
+  | "analytics"
+  | "inventory"
+  | "anomalies"
+  | "reports"
+  | "settings"
+  | "indent";
 
 export default function AdminDashboard() {
-  type View =
-    | 'overview'
-    | 'users'
-    | 'patients'
-    | 'analytics'
-    | 'inventory'
-    | 'anomalies'
-    | 'reports'
-    | 'settings'
-    | 'indent';
-
-  const [activeView, setActiveView] = useState<View>('overview');
+  const [activeView, setActiveView] = useState<View>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +55,9 @@ export default function AdminDashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [medicineAnalytics, setMedicineAnalytics] = useState<MedicineAnalytics[]>([]);
+  const [medicineAnalytics, setMedicineAnalytics] = useState<
+    MedicineAnalytics[]
+  >([]);
   const [anomalies, setAnomalies] = useState<AnomalyAlert[]>([]);
 
   // 🔹 Fetch Data by View
@@ -65,13 +68,13 @@ export default function AdminDashboard() {
 
       try {
         switch (activeView) {
-          case 'overview':
+          case "overview":
             setStats(await adminService.getDashboardStats());
             break;
-          case 'users':
+          case "users":
             setUsers(await adminService.getUsers());
             break;
-          case 'patients': {
+          case "patients": {
             const [studentsData, prescriptionsData] = await Promise.all([
               adminService.getStudents(),
               adminService.getPrescriptions(),
@@ -80,22 +83,30 @@ export default function AdminDashboard() {
             setPrescriptions(prescriptionsData);
             break;
           }
-          case 'analytics':
+          case "analytics":
             setMedicineAnalytics(await adminService.getMedicineAnalytics());
             break;
-          case 'inventory':
+          case "inventory":
             setMedicines(await adminService.getMedicines());
             break;
-          case 'anomalies':
-            setAnomalies(await adminService.getAnomalies());
+          case "anomalies": {
+            const res = await adminService.getAnomalies();
+            console.log("anomaly alerts fetched:", res);
+            // Backend returns { anomalies: [...] }
+            if (res && Array.isArray(res.anomalies)) {
+              setAnomalies(res.anomalies);
+            } else {
+              setAnomalies([]);
+            }
             break;
+          }
         }
       } catch (err: any) {
-        console.error('Error fetching data:', err);
+        console.error("Error fetching data:", err);
         const msg =
           err.response?.data?.detail ||
           err.message ||
-          'An unexpected error occurred while fetching data.';
+          "An unexpected error occurred while fetching data.";
         setError(msg);
       } finally {
         setLoading(false);
@@ -109,60 +120,63 @@ export default function AdminDashboard() {
   const handleUserAdd = async (userData: Partial<User>) => {
     try {
       await adminService.createUser(userData);
-      toast.success('User added successfully!');
+      toast.success("User added successfully!");
       setUsers(await adminService.getUsers());
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to add user');
+      toast.error(error.response?.data?.detail || "Failed to add user");
     }
   };
 
   const handleUserUpdate = async (id: number, userData: Partial<User>) => {
     try {
       await adminService.updateUser(id, userData);
-      toast.success('User updated successfully!');
+      toast.success("User updated successfully!");
       setUsers(await adminService.getUsers());
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to update user');
+      toast.error(error.response?.data?.detail || "Failed to update user");
     }
   };
 
   const handleUserDelete = async (id: number) => {
     try {
       await adminService.deleteUser(id);
-      toast.success('User deleted successfully!');
+      toast.success("User deleted successfully!");
       setUsers(await adminService.getUsers());
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to delete user');
+      toast.error(error.response?.data?.detail || "Failed to delete user");
     }
   };
 
   const handleMedicineAdd = async (medicineData: Partial<Medicine>) => {
     try {
       await adminService.createMedicine(medicineData);
-      toast.success('Medicine added successfully!');
+      toast.success("Medicine added successfully!");
       setMedicines(await adminService.getMedicines());
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to add medicine');
+      toast.error(error.response?.data?.detail || "Failed to add medicine");
     }
   };
 
-  const handleMedicineUpdate = async (id: number, medicineData: Partial<Medicine>) => {
+  const handleMedicineUpdate = async (
+    id: number,
+    medicineData: Partial<Medicine>
+  ) => {
     try {
       await adminService.updateMedicine(id, medicineData);
-      toast.success('Medicine updated successfully!');
+      toast.success("Medicine updated successfully!");
       setMedicines(await adminService.getMedicines());
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to update medicine');
+      toast.error(error.response?.data?.detail || "Failed to update medicine");
     }
   };
 
   const handleMedicineDelete = async (id: number) => {
     try {
       await adminService.deleteMedicine(id);
-      toast.success('Medicine deleted successfully!');
+      toast.success("Medicine deleted successfully!");
       setMedicines(await adminService.getMedicines());
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to delete medicine');
+      toast.error(error.response?.data?.detail || "Failed to delete medicine");
     }
   };
 
@@ -192,9 +206,9 @@ export default function AdminDashboard() {
     }
 
     switch (activeView) {
-      case 'overview':
+      case "overview":
         return stats ? <OverviewView stats={stats} /> : null;
-      case 'users':
+      case "users":
         return (
           <UserManagementView
             users={users}
@@ -203,11 +217,16 @@ export default function AdminDashboard() {
             onAdd={handleUserAdd}
           />
         );
-      case 'patients':
-        return <PatientRecordsView prescriptions={prescriptions} students={students} />;
-      case 'analytics':
+      case "patients":
+        return (
+          <PatientRecordsView
+            prescriptions={prescriptions}
+            students={students}
+          />
+        );
+      case "analytics":
         return <AnalyticsView />;
-      case 'inventory':
+      case "inventory":
         return (
           <InventoryView
             medicines={medicines}
@@ -216,9 +235,9 @@ export default function AdminDashboard() {
             onDelete={handleMedicineDelete}
           />
         );
-      case 'indent':
+      case "indent":
         return <IndentsHistory />;
-      case 'anomalies':
+      case "anomalies":
         return <AnomalyView anomalies={anomalies} />;
       default:
         return stats ? <OverviewView stats={stats} /> : null;
@@ -226,15 +245,13 @@ export default function AdminDashboard() {
   };
 
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'users', label: 'User Management', icon: Users },
-    { id: 'patients', label: 'Patient Records', icon: UserCog },
-    { id: 'analytics', label: 'Analytics', icon: Activity },
-    { id: 'inventory', label: 'Medicine Stock', icon: Package },
-    { id: 'indent', label: 'Indents', icon: FileText },
-    { id: 'anomalies', label: 'Anomaly Detection', icon: AlertTriangle },
-    { id: 'reports', label: 'Reports', icon: FileText },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "users", label: "User Management", icon: Users },
+    { id: "patients", label: "Patient Records", icon: UserCog },
+    { id: "analytics", label: "Analytics", icon: Activity },
+    { id: "inventory", label: "Medicine Stock", icon: Package },
+    { id: "indent", label: "Indents", icon: FileText },
+    { id: "anomalies", label: "Anomaly Detection", icon: AlertTriangle },
   ];
 
   return (
@@ -251,7 +268,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div
         className={`flex-1 flex flex-col min-w-0 bg-gray-50 transition-all duration-300 ${
-          sidebarOpen ? 'lg:ml-64' : ''
+          sidebarOpen ? "lg:ml-64" : ""
         }`}
       >
         <TopNavbar
@@ -260,7 +277,9 @@ export default function AdminDashboard() {
           notificationCount={5}
           onMenuClick={() => setSidebarOpen(true)}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{renderView()}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+          {renderView()}
+        </main>
       </div>
     </div>
   );

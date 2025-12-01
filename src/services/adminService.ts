@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { DashboardStats, User, Student, Medicine, Prescription, MedicineAnalytics, AnomalyAlert } from '../types';
+import { DashboardStats, User, Student, Medicine, Prescription, MedicineAnalytics, AnomalyAlert,AnomalyResponse } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -75,8 +75,8 @@ export const adminService = {
   },
 
   // Anomaly Detection
-  getAnomalies: async (): Promise<AnomalyAlert[]> => {
-    const response = await axios.get(`${API_BASE_URL}/admin/anomalies`);
+  getAnomalies: async (): Promise<AnomalyResponse[]> => {
+    const response = await axios.get(`${API_BASE_URL}/anomalies`);
     return response.data;
   },
 

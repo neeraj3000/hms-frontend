@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export interface User {
 	id: number;
 	username: string;
@@ -98,4 +100,8 @@ export interface AnomalyAlert {
 	message: string;
 	timestamp: string;
 	details?: string;
+}
+
+export interface AnomalyResponse {
+  anomalies: AnomalyAlert[];
 }

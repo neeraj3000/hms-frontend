@@ -227,7 +227,7 @@ const InventoryAnalytics: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-gray-900">{medicine.count}</p>
-                    <p className="text-sm text-gray-600">prescriptions</p>
+                    <p className="text-sm text-gray-600">medicines</p>
                   </div>
                 </div>
               ))}

@@ -22,7 +22,7 @@ const IndentsHistory: React.FC = () => {
   const [confirmApprove, setConfirmApprove] = useState<number | null>(null);
   const [approving, setApproving] = useState<number | null>(null);
 
-  const adminName = "Admin Neeraj"; // You can dynamically set this later
+  const adminName = "Admin AO"; // You can dynamically set this later
 
   useEffect(() => {
     fetchIndents();

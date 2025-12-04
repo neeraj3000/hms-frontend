@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FileSpreadsheet, UploadCloud, Clock, CheckCircle, X, Eye, PlusCircle } from "lucide-react";
+import { FileSpreadsheet, UploadCloud, Clock, CheckCircle, X, Eye, PlusCircle, Download } from "lucide-react";
 
 interface Indent {
   id: number;
@@ -19,9 +19,11 @@ const RequestIndent: React.FC = () => {
   const [uploadedBy, setUploadedBy] = useState("Storekeeper");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [sampleIndentUrl, setSampleIndentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchIndents();
+    fetchSampleIndent();
   }, []);
 
   const fetchIndents = async () => {
@@ -37,6 +39,18 @@ const RequestIndent: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const fetchSampleIndent = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/indents/sample`);
+      if (response.ok) {
+        const data = await response.json();
+        setSampleIndentUrl(data.url);
+      }
+    } catch (error) {
+      console.error("Error fetching sample indent:", error);
+    }
+  }
 
   const handleUploadIndent = async () => {
     if (!file) {
@@ -104,10 +118,27 @@ const RequestIndent: React.FC = () => {
           </div>
           <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
             <button
+              onClick={() => {
+                if (!sampleIndentUrl) return;
+
+                const link = document.createElement("a");
+                link.href = sampleIndentUrl;
+                link.setAttribute("download", "sample_indent.xlsx");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg w-full sm:w-auto"
+            >
+              <Download className=" mr-2" /> Download Sample Indent
+            </button>
+          </div>
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-end">
+            <button
               onClick={() => setShowUploadDialog(true)}
               className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg w-full sm:w-auto"
             >
-              <PlusCircle className="w-4 h-4 mr-2" /> Request Indent
+              <PlusCircle className="mr-2" /> Request Indent
             </button>
           </div>
         </div>
